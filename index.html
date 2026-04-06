@@ -2728,9 +2728,14 @@ function closeAllDropdowns() {
 
 function highlightMatch(name, query) {
   if (!query) return name;
-  const idx = name.toLowerCase().indexOf(query.toLowerCase());
-  if (idx === -1) return name;
-  return name.slice(0, idx) + '<em>' + name.slice(idx, idx + query.length) + '</em>' + name.slice(idx + query.length);
+  // Try to highlight each word in query
+  let result = name;
+  const words = query.trim().split(' ').filter(Boolean);
+  words.forEach(word => {
+    const re = new RegExp('(' + word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+    result = result.replace(re, '<em>$1</em>');
+  });
+  return result;
 }
 
 async function handleRosterInput(input, player, slot) {
@@ -2760,11 +2765,24 @@ async function handleRosterInput(input, player, slot) {
 
   if (!document.body.contains(input)) return; // input was removed
 
-  // Filter matches — prioritize starts-with, then contains
+  // Filter matches — prioritize starts-with on full name or any word, then contains
   const q = query.toLowerCase();
-  const startsWith = names.filter(n => n.toLowerCase().startsWith(q));
-  const contains = names.filter(n => !n.toLowerCase().startsWith(q) && n.toLowerCase().includes(q));
-  const matches = [...startsWith, ...contains].slice(0, 8);
+  const words = q.split(' ').filter(Boolean);
+  const score = name => {
+    const n = name.toLowerCase();
+    const parts = n.split(' ');
+    if (n.startsWith(q)) return 0; // full name starts with query (highest)
+    if (parts.some(p => p.startsWith(q))) return 1; // any word starts with query
+    if (words.every(w => n.includes(w))) return 2; // all words appear somewhere
+    if (n.includes(q)) return 3; // substring match
+    return 99;
+  };
+  const matches = names
+    .map(n => ({ n, s: score(n) }))
+    .filter(x => x.s < 99)
+    .sort((a, b) => a.s - b.s || a.n.localeCompare(b.n))
+    .slice(0, 8)
+    .map(x => x.n);
 
   if (matches.length === 0) return;
 
