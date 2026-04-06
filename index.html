@@ -1505,6 +1505,8 @@ async function init() {
     await syncPull();
     startPolling();
   }
+  // Set initial ESPN dot state based on whether major has a feed
+  setESPNStatus('pending');
 }
 
 function startPolling() {
@@ -1754,7 +1756,8 @@ function switchMajor(id) {
   activeMajorId = id;
   activeView = 'major';
   renderTabs();
-  fetchESPN(id);
+  setESPNStatus('pending');
+  fetchESPN(id).catch(() => {});
   renderMain();
 }
 
@@ -2237,6 +2240,14 @@ function setSyncStatus(s) {
 
 function setESPNStatus(s) {
   const dot = document.getElementById('espnDot');
+  const major = MAJORS.find(m => m.id === activeMajorId);
+  // Hide ESPN dot entirely if this major has no ESPN feed yet
+  if (!major?.espnId) {
+    dot.style.display = 'none';
+    updateStatusLabel();
+    return;
+  }
+  dot.style.display = '';
   if (s === 'live') dot.className = 'sync-dot live';
   else if (s === 'error') dot.className = 'sync-dot error';
   else dot.className = 'sync-dot';
