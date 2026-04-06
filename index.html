@@ -1384,8 +1384,10 @@
     </div>
     <div class="header-right">
       <div class="sync-status">
-        <div class="sync-dot" id="syncDot"></div>
-        <span id="syncLabel">connecting…</span>
+        <div class="sync-dot" id="syncDot" title="JSONBin sync"></div>
+        <span id="syncLabel" style="display:none"></span>
+        <div class="sync-dot" id="espnDot" title="ESPN scores"></div>
+        <span style="font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--gold-light);opacity:0.6" id="syncLabels">connecting…</span>
       </div>
       <button class="btn btn-outline btn-sm" id="refreshBtn" onclick="syncPull()">↻ Refresh</button>
       <button class="btn btn-gold btn-sm" onclick="openAdmin()">Admin</button>
@@ -1509,7 +1511,7 @@ function startPolling() {
   if (pollTimer) clearInterval(pollTimer);
   if (espnTimer) clearInterval(espnTimer);
   pollTimer = setInterval(syncPull, POLL_INTERVAL);
-  espnTimer = setInterval(() => fetchESPN(activeMajorId), ESPN_POLL);
+  espnTimer = setInterval(() => fetchESPN(activeMajorId).catch(() => {}), ESPN_POLL);
 }
 
 // ══════════════════════════════════════════
@@ -1539,7 +1541,7 @@ async function syncPull() {
       state = migrateState(raw);
       saveCache(raw);
       setSyncStatus('live');
-      await fetchESPN(activeMajorId);
+      fetchESPN(activeMajorId).catch(() => {}); // non-blocking, don't let ESPN failure affect sync status
       renderMain();
     } else {
       setSyncStatus('live');
@@ -1655,8 +1657,12 @@ async function fetchESPN(majorId) {
       scores[name.toLowerCase()] = { score: scoreDisp, toPar, pos, thru, todayDisp, cut };
     });
     espnData[majorId] = scores;
-    if (majorId === activeMajorId) renderMain();
+    if (majorId === activeMajorId) {
+      setESPNStatus('live');
+      renderMain();
+    }
   } catch(e) {
+    setESPNStatus('error');
     console.warn('ESPN fetch failed', e);
   }
 }
@@ -2223,10 +2229,28 @@ function saveWinners() {
 // ══════════════════════════════════════════
 function setSyncStatus(s) {
   const dot = document.getElementById('syncDot');
-  const label = document.getElementById('syncLabel');
-  if (s === 'live') { dot.className = 'sync-dot live'; label.textContent = 'Live'; }
-  else if (s === 'error') { dot.className = 'sync-dot error'; label.textContent = 'Error'; }
-  else { dot.className = 'sync-dot'; label.textContent = 'Syncing…'; }
+  if (s === 'live') dot.className = 'sync-dot live';
+  else if (s === 'error') dot.className = 'sync-dot error';
+  else dot.className = 'sync-dot';
+  updateStatusLabel();
+}
+
+function setESPNStatus(s) {
+  const dot = document.getElementById('espnDot');
+  if (s === 'live') dot.className = 'sync-dot live';
+  else if (s === 'error') dot.className = 'sync-dot error';
+  else dot.className = 'sync-dot';
+  updateStatusLabel();
+}
+
+function updateStatusLabel() {
+  const label = document.getElementById('syncLabels');
+  if (!label) return;
+  const binLive = document.getElementById('syncDot')?.classList.contains('live');
+  const espnLive = document.getElementById('espnDot')?.classList.contains('live');
+  if (binLive && espnLive) label.textContent = 'Live';
+  else if (binLive) label.textContent = 'Synced';
+  else label.textContent = 'Connecting…';
 }
 
 function showToast(msg) {
@@ -2604,9 +2628,9 @@ fetchESPN = async function(majorId) {
 };
 
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') fetchESPN(activeMajorId);
+  if (document.visibilityState === 'visible') fetchESPN(activeMajorId).catch(() => {});
 });
-window.addEventListener('focus', () => fetchESPN(activeMajorId));
+window.addEventListener('focus', () => fetchESPN(activeMajorId).catch(() => {}));
 
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
