@@ -28,6 +28,10 @@
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
+  html {
+    scroll-padding-top: 110px; /* header + tabs height */
+  }
+
   body {
     font-family: 'Libre Baskerville', Georgia, serif;
     background: var(--green-deep);
@@ -1782,6 +1786,7 @@ function switchView(view) {
 function renderMain() {
   if (!state) return;
   if (activeView === 'history') { renderHistory(); return; }
+  window.scrollTo({ top: 0, behavior: 'instant' });
   const major = MAJORS.find(m => m.id === activeMajorId);
   const mData = state.majors[activeMajorId];
   const pot = calcPot(activeMajorId);
