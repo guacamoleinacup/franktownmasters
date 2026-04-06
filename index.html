@@ -1398,7 +1398,7 @@
 </nav>
 
 <main class="main" id="mainContent">
-  <div class="empty-state"><p><span class="loading-spinner"></span>Loading…</p></div>
+  <div class="empty-state"><p><span class="loading-spinner"></span>Loading…</p><p style="font-size:0.6rem;margin-top:8px;opacity:0.4">Connecting to server</p></div>
 </main>
 
 <div class="toast" id="toast"></div>
@@ -1471,10 +1471,33 @@ let pollTimer = null;
 let espnTimer = null;
 
 // ══════════════════════════════════════════
+// LOCAL CACHE — render instantly on load
+// ══════════════════════════════════════════
+const CACHE_KEY = 'fgm_state_v1';
+
+function saveCache(raw) {
+  try { localStorage.setItem(CACHE_KEY, JSON.stringify(raw)); } catch(e) {}
+}
+
+function loadCache() {
+  try { return JSON.parse(localStorage.getItem(CACHE_KEY) || 'null'); } catch(e) { return null; }
+}
+
+// ══════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════
 async function init() {
   renderTabs();
+
+  // Render from cache immediately — no waiting for network
+  const cached = loadCache();
+  if (cached) {
+    state = migrateState(cached);
+    renderMain();
+    setSyncStatus('syncing');
+  }
+
+  // Then fetch live data in background
   await syncPull();
   startPolling();
 }
@@ -1492,17 +1515,22 @@ function startPolling() {
 let lastHash = '';
 
 async function syncPull() {
-  setSyncStatus('syncing');
+  if (!state) setSyncStatus('syncing');
   try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000); // 8s timeout
     const r = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
-      headers: { 'X-Master-Key': API_KEY }
+      headers: { 'X-Master-Key': API_KEY },
+      signal: controller.signal
     });
+    clearTimeout(timeout);
     const j = await r.json();
     const raw = j.record;
     const h = JSON.stringify(raw);
     if (h !== lastHash) {
       lastHash = h;
       state = migrateState(raw);
+      saveCache(raw);           // persist for next page load
       setSyncStatus('live');
       await fetchESPN(activeMajorId);
       renderMain();
@@ -1510,26 +1538,36 @@ async function syncPull() {
       setSyncStatus('live');
     }
   } catch(e) {
-    setSyncStatus('error');
-    console.error(e);
+    if (e.name === 'AbortError') {
+      setSyncStatus('error');
+      showToast('Connection slow — showing cached data');
+    } else {
+      setSyncStatus('error');
+    }
+    console.warn('syncPull failed:', e.message);
   }
 }
 
 async function syncPush() {
   setSyncStatus('syncing');
   try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
     await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', 'X-Master-Key': API_KEY },
-      body: JSON.stringify(state)
+      body: JSON.stringify(state),
+      signal: controller.signal
     });
+    clearTimeout(timeout);
+    saveCache(state);           // keep cache in sync after push
     setSyncStatus('live');
     showToast('Saved ✓');
     renderMain();
     if (adminUnlocked) renderAdmin();
   } catch(e) {
     setSyncStatus('error');
-    showToast('Save failed');
+    showToast('Save failed — check connection');
   }
 }
 
