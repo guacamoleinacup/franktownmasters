@@ -1471,6 +1471,7 @@ let adminUnlocked = false;
 let espnData = {}; // keyed by majorId
 let pollTimer = null;
 let espnTimer = null;
+let syncFailCount = 0; // only show red after 2 consecutive failures
 
 // ══════════════════════════════════════════
 // LOCAL CACHE — render instantly on load
@@ -1525,7 +1526,7 @@ async function syncPull() {
   if (!state) setSyncStatus('syncing');
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 5000);
+    const timeout = setTimeout(() => controller.abort(), 10000); // 10s timeout
 
     const r = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
       headers: { 'X-Master-Key': API_KEY },
@@ -1542,28 +1543,35 @@ async function syncPull() {
       lastHash = h;
       state = migrateState(raw);
       saveCache(raw);
+      syncFailCount = 0;
       setSyncStatus('live');
       fetchESPN(activeMajorId).catch(() => {}); // non-blocking, don't let ESPN failure affect sync status
       renderMain();
     } else {
+      syncFailCount = 0;
       setSyncStatus('live');
       if (document.getElementById('loadingState')) renderMain();
     }
   } catch(e) {
-    setSyncStatus('error');
+    syncFailCount++;
     const cached = loadCache();
     if (cached && !state) state = migrateState(cached);
-    if (state) {
-      renderMain();
-      showToast('Offline — showing last known data');
-    } else {
-      document.getElementById('mainContent').innerHTML = `
-        <div class="empty-state">
-          <p style="font-family:'DM Mono',monospace;font-size:0.8rem;color:var(--gold)">⚠ Connection failed</p>
-          <p style="font-size:0.65rem;margin-top:8px;opacity:0.5;font-family:'DM Mono',monospace">${e.name}: ${e.message}</p>
-          <button class="btn btn-gold" style="margin-top:20px;font-size:0.8rem" onclick="syncPull()">↻ Tap to Retry</button>
-        </div>`;
+    // Only show red dot + toast after 2 consecutive failures
+    if (syncFailCount >= 2) {
+      setSyncStatus('error');
+      if (state) {
+        showToast('Connection lost — retrying…');
+      } else {
+        document.getElementById('mainContent').innerHTML = `
+          <div class="empty-state">
+            <p style="font-family:'DM Mono',monospace;font-size:0.8rem;color:var(--gold)">⚠ Connection failed</p>
+            <p style="font-size:0.65rem;margin-top:8px;opacity:0.5;font-family:'DM Mono',monospace">${e.name}: ${e.message}</p>
+            <button class="btn btn-gold" style="margin-top:20px;font-size:0.8rem" onclick="syncPull()">↻ Tap to Retry</button>
+          </div>`;
+      }
     }
+    // Always render from cache if available, silently
+    if (state) renderMain();
   }
 }
 
