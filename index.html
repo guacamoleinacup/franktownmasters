@@ -1,0 +1,1664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Franktown Golf Majors</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green-deep: #1a2e1a;
+    --green-mid: #2d4a2d;
+    --green-light: #3d6b3d;
+    --green-fade: #4a7c4a;
+    --gold: #c9a84c;
+    --gold-light: #e0c070;
+    --gold-pale: #f5e8c0;
+    --cream: #faf6ed;
+    --cream-dark: #f0e8d5;
+    --white: #ffffff;
+    --text-dark: #1a1a1a;
+    --text-mid: #3a3a3a;
+    --text-light: #6a6a6a;
+    --red: #8b2020;
+    --red-light: #c0392b;
+    --border: rgba(201,168,76,0.3);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Libre Baskerville', Georgia, serif;
+    background: var(--green-deep);
+    color: var(--cream);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── HEADER ── */
+  .site-header {
+    background: var(--green-deep);
+    border-bottom: 2px solid var(--gold);
+    padding: 0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  }
+
+  .header-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .site-title {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--gold);
+    letter-spacing: 0.02em;
+    line-height: 1.1;
+  }
+
+  .site-subtitle {
+    font-size: 0.65rem;
+    color: var(--gold-light);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    font-family: 'DM Mono', monospace;
+    margin-top: 2px;
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .sync-status {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--gold-light);
+    opacity: 0.7;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .sync-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: #888;
+    transition: background 0.3s;
+  }
+  .sync-dot.live { background: #4caf50; box-shadow: 0 0 6px #4caf50; }
+  .sync-dot.error { background: var(--red-light); }
+
+  .btn {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 7px 14px;
+    border-radius: 3px;
+    border: 1px solid;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-gold {
+    background: var(--gold);
+    color: var(--green-deep);
+    border-color: var(--gold);
+    font-weight: 500;
+  }
+  .btn-gold:hover { background: var(--gold-light); border-color: var(--gold-light); }
+
+  .btn-outline {
+    background: transparent;
+    color: var(--gold);
+    border-color: var(--border);
+  }
+  .btn-outline:hover { border-color: var(--gold); background: rgba(201,168,76,0.08); }
+
+  .btn-sm { padding: 5px 10px; font-size: 0.65rem; }
+  .btn-danger { background: var(--red); color: white; border-color: var(--red); }
+  .btn-danger:hover { background: var(--red-light); }
+
+  /* ── MAJOR TABS ── */
+  .major-tabs {
+    background: var(--green-mid);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .tabs-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 24px;
+    display: flex;
+    gap: 0;
+    overflow-x: auto;
+  }
+
+  .tab {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 13px 20px;
+    color: var(--gold-light);
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    white-space: nowrap;
+    opacity: 0.6;
+    transition: all 0.2s;
+    background: none;
+    border-top: none;
+    border-left: none;
+    border-right: none;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .tab:hover { opacity: 0.9; }
+  .tab.active { opacity: 1; border-bottom-color: var(--gold); color: var(--gold); }
+  .tab .tab-year { font-size: 0.6rem; opacity: 0.7; display: block; }
+
+  /* ── MAIN ── */
+  .main {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 32px 24px;
+  }
+
+  /* ── MAJOR HERO ── */
+  .major-hero {
+    background: linear-gradient(135deg, var(--green-mid) 0%, var(--green-deep) 100%);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 28px 32px;
+    margin-bottom: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+
+  .major-info h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--gold);
+    margin-bottom: 4px;
+  }
+
+  .major-info .major-meta {
+    font-size: 0.78rem;
+    color: var(--gold-light);
+    opacity: 0.8;
+    letter-spacing: 0.05em;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .pot-display {
+    text-align: right;
+  }
+
+  .pot-amount {
+    font-family: 'Playfair Display', serif;
+    font-size: 2.4rem;
+    font-weight: 700;
+    color: var(--gold);
+    line-height: 1;
+  }
+
+  .pot-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--gold-light);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    opacity: 0.7;
+    margin-top: 4px;
+  }
+
+  .pot-breakdown {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--gold-light);
+    opacity: 0.6;
+    margin-top: 2px;
+  }
+
+  /* ── SECTION HEADER ── */
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    gap: 12px;
+  }
+
+  .section-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--gold-light);
+    letter-spacing: 0.02em;
+  }
+
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 28px 0;
+  }
+
+  /* ── LEADERBOARD TABLE ── */
+  .lb-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+  }
+
+  .lb-table th {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--gold);
+    opacity: 0.7;
+    padding: 8px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .lb-table th.num { text-align: center; }
+
+  .lb-table td {
+    padding: 11px 12px;
+    border-bottom: 1px solid rgba(201,168,76,0.1);
+    vertical-align: middle;
+    color: var(--cream);
+  }
+
+  .lb-table td.num { text-align: center; font-family: 'DM Mono', monospace; }
+
+  .lb-table tr:hover td { background: rgba(201,168,76,0.05); }
+
+  .lb-table tr.leader td { background: rgba(201,168,76,0.08); }
+  .lb-table tr.leader td:first-child { border-left: 3px solid var(--gold); }
+
+  .rank-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    font-weight: 500;
+    background: rgba(201,168,76,0.15);
+    color: var(--gold-light);
+  }
+
+  .rank-badge.gold { background: var(--gold); color: var(--green-deep); }
+
+  .player-name {
+    font-weight: 700;
+    color: var(--cream);
+    font-size: 0.9rem;
+  }
+
+  .golfer-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 4px;
+  }
+
+  .golfer-pill {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.6rem;
+    padding: 2px 7px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    color: var(--gold-light);
+    background: rgba(201,168,76,0.07);
+    white-space: nowrap;
+  }
+
+  .golfer-pill.missed-cut {
+    border-color: rgba(139,32,32,0.4);
+    color: rgba(192,57,43,0.8);
+    background: rgba(139,32,32,0.1);
+    text-decoration: line-through;
+  }
+
+  .golfer-pill.withdrawn {
+    border-color: rgba(100,100,100,0.4);
+    color: rgba(150,150,150,0.8);
+    background: rgba(100,100,100,0.1);
+    text-decoration: line-through;
+  }
+
+  .golfer-pill.winner {
+    border-color: var(--gold);
+    color: var(--gold);
+    background: rgba(201,168,76,0.15);
+  }
+
+  .golfer-pill.alternate {
+    border-style: dashed;
+    opacity: 0.7;
+  }
+
+  .score-val {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+
+  .score-under { color: #4caf50; }
+  .score-over { color: var(--red-light); }
+  .score-even { color: var(--gold-light); }
+  .score-cut { color: rgba(150,150,150,0.6); font-size: 0.75rem; }
+
+  .missed-cut-badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.6rem;
+    padding: 1px 5px;
+    border-radius: 3px;
+    background: rgba(139,32,32,0.2);
+    color: rgba(192,57,43,0.9);
+    border: 1px solid rgba(139,32,32,0.3);
+    margin-left: 4px;
+  }
+
+  /* ── GOLFER LEADERBOARD ── */
+  .golfer-lb {
+    background: var(--green-mid);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+
+  .golfer-lb-header {
+    padding: 14px 18px;
+    background: rgba(0,0,0,0.2);
+    border-bottom: 1px solid var(--border);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--gold);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .golfer-row {
+    display: flex;
+    align-items: center;
+    padding: 10px 18px;
+    border-bottom: 1px solid rgba(201,168,76,0.08);
+    gap: 12px;
+    font-size: 0.82rem;
+    transition: background 0.15s;
+  }
+
+  .golfer-row:hover { background: rgba(201,168,76,0.04); }
+  .golfer-row:last-child { border-bottom: none; }
+
+  .golfer-pos {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    width: 32px;
+    color: var(--gold-light);
+    opacity: 0.7;
+    flex-shrink: 0;
+  }
+
+  .golfer-name-cell {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .golfer-name-main {
+    font-weight: 700;
+    color: var(--cream);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .golfer-owner {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.58rem;
+    color: var(--gold-light);
+    opacity: 0.6;
+    margin-top: 2px;
+  }
+
+  .golfer-score-cell {
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  .golfer-total {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--text-light);
+    color: rgba(200,200,200,0.5);
+    margin-top: 1px;
+  }
+
+  /* ── GRID LAYOUT ── */
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 28px;
+  }
+
+  @media (max-width: 768px) {
+    .two-col { grid-template-columns: 1fr; }
+    .major-hero { flex-direction: column; align-items: flex-start; }
+    .pot-display { text-align: left; }
+    .header-inner { flex-direction: column; align-items: flex-start; gap: 10px; }
+  }
+
+  /* ── TEAM STANDINGS CARD ── */
+  .standings-card {
+    background: var(--green-mid);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 28px;
+  }
+
+  .standings-card-header {
+    padding: 14px 18px;
+    background: rgba(0,0,0,0.2);
+    border-bottom: 1px solid var(--border);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--gold);
+    display: flex;
+    justify-content: space-between;
+  }
+
+  /* ── ADMIN MODAL ── */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    backdrop-filter: blur(4px);
+  }
+
+  .modal {
+    background: var(--green-deep);
+    border: 1px solid var(--gold);
+    border-radius: 8px;
+    width: 100%;
+    max-width: 720px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+  }
+
+  .modal-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .modal-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem;
+    color: var(--gold);
+  }
+
+  .modal-close {
+    background: none;
+    border: none;
+    color: var(--gold-light);
+    font-size: 1.4rem;
+    cursor: pointer;
+    opacity: 0.7;
+    line-height: 1;
+    padding: 0 4px;
+  }
+  .modal-close:hover { opacity: 1; }
+
+  .modal-body { padding: 24px; }
+
+  .admin-section {
+    margin-bottom: 28px;
+  }
+
+  .admin-section h3 {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 14px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .form-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    flex: 1;
+    min-width: 120px;
+  }
+
+  .form-group label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.63rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--gold-light);
+    opacity: 0.8;
+  }
+
+  .form-group input, .form-group select {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 8px 10px;
+    color: var(--cream);
+    font-family: 'Libre Baskerville', serif;
+    font-size: 0.82rem;
+    outline: none;
+    transition: border-color 0.2s;
+    width: 100%;
+  }
+
+  .form-group input:focus, .form-group select:focus {
+    border-color: var(--gold);
+  }
+
+  .form-group select option {
+    background: var(--green-deep);
+    color: var(--cream);
+  }
+
+  .player-roster-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+  }
+
+  .player-roster-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 14px;
+  }
+
+  .player-roster-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 0.95rem;
+    color: var(--gold);
+    margin-bottom: 10px;
+    font-weight: 600;
+  }
+
+  .roster-inputs {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .roster-input-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .roster-slot-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.58rem;
+    text-transform: uppercase;
+    color: var(--gold-light);
+    opacity: 0.6;
+    width: 20px;
+    flex-shrink: 0;
+  }
+
+  .roster-input-row input {
+    flex: 1;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 5px 8px;
+    color: var(--cream);
+    font-size: 0.78rem;
+    font-family: 'Libre Baskerville', serif;
+    outline: none;
+  }
+  .roster-input-row input:focus { border-color: var(--gold); }
+  .roster-input-row input.alt-input { border-style: dashed; opacity: 0.8; }
+
+  /* ── STATUS CONTROLS ── */
+  .status-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+  .status-table th {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--gold);
+    opacity: 0.7;
+    padding: 7px 10px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  .status-table td {
+    padding: 8px 10px;
+    border-bottom: 1px solid rgba(201,168,76,0.08);
+    color: var(--cream);
+    vertical-align: middle;
+  }
+
+  .status-select {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 4px 8px;
+    color: var(--cream);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    outline: none;
+    cursor: pointer;
+  }
+  .status-select:focus { border-color: var(--gold); }
+  .status-select option { background: var(--green-deep); }
+
+  /* ── PASSWORD ── */
+  .pw-gate {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    padding: 20px 0;
+  }
+
+  .pw-gate p {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--gold-light);
+    opacity: 0.8;
+    letter-spacing: 0.06em;
+  }
+
+  .pw-gate input {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 10px 14px;
+    color: var(--cream);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.85rem;
+    outline: none;
+    width: 220px;
+    text-align: center;
+  }
+  .pw-gate input:focus { border-color: var(--gold); }
+
+  .pw-error {
+    color: var(--red-light);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+  }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--green-mid);
+    border: 1px solid var(--gold);
+    border-radius: 5px;
+    padding: 12px 18px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--gold-light);
+    z-index: 500;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.3s;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+
+  /* ── EMPTY STATE ── */
+  .empty-state {
+    text-align: center;
+    padding: 48px 24px;
+    opacity: 0.5;
+  }
+
+  .empty-state p {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    color: var(--gold-light);
+  }
+
+  /* ── LOADING ── */
+  .loading-spinner {
+    display: inline-block;
+    width: 14px; height: 14px;
+    border: 2px solid rgba(201,168,76,0.2);
+    border-top-color: var(--gold);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    vertical-align: middle;
+    margin-right: 6px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── WINNER BANNER ── */
+  .winner-banner {
+    background: linear-gradient(135deg, rgba(201,168,76,0.2), rgba(201,168,76,0.05));
+    border: 1px solid var(--gold);
+    border-radius: 6px;
+    padding: 18px 24px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .winner-trophy { font-size: 2rem; }
+
+  .winner-text h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1rem;
+    color: var(--gold);
+    margin-bottom: 2px;
+  }
+
+  .winner-text p {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    color: var(--gold-light);
+    opacity: 0.8;
+  }
+
+  /* ── STANDINGS ACROSS MAJORS ── */
+  .overall-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+  }
+
+  .overall-table th {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--gold);
+    opacity: 0.7;
+    padding: 8px 12px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+  }
+  .overall-table th:first-child { text-align: left; }
+
+  .overall-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(201,168,76,0.08);
+    text-align: center;
+    vertical-align: middle;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--cream);
+  }
+  .overall-table td:first-child { text-align: left; font-family: 'Libre Baskerville', serif; font-weight: 700; }
+
+  .major-col-header {
+    font-size: 0.55rem !important;
+  }
+
+  .amount-positive { color: #4caf50; }
+  .amount-negative { color: var(--red-light); }
+
+  /* ── ROUND INDICATOR ── */
+  .round-badge {
+    display: inline-block;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.08em;
+    padding: 3px 8px;
+    border-radius: 10px;
+    text-transform: uppercase;
+  }
+  .round-upcoming { background: rgba(100,100,100,0.2); color: #aaa; border: 1px solid rgba(100,100,100,0.3); }
+  .round-live { background: rgba(76,175,80,0.15); color: #4caf50; border: 1px solid rgba(76,175,80,0.3); animation: pulse 2s infinite; }
+  .round-complete { background: rgba(201,168,76,0.1); color: var(--gold-light); border: 1px solid var(--border); }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.6} }
+
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-inner">
+    <div>
+      <div class="site-title">⛳ Franktown Golf Majors</div>
+      <div class="site-subtitle">Draft League · 2026</div>
+    </div>
+    <div class="header-right">
+      <div class="sync-status">
+        <div class="sync-dot" id="syncDot"></div>
+        <span id="syncLabel">connecting…</span>
+      </div>
+      <button class="btn btn-outline btn-sm" id="refreshBtn" onclick="syncPull()">↻ Refresh</button>
+      <button class="btn btn-gold btn-sm" onclick="openAdmin()">Admin</button>
+    </div>
+  </div>
+</header>
+
+<nav class="major-tabs">
+  <div class="tabs-inner" id="majorTabs"></div>
+</nav>
+
+<main class="main" id="mainContent">
+  <div class="empty-state"><p><span class="loading-spinner"></span>Loading…</p></div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<!-- ADMIN MODAL -->
+<div class="modal-overlay" id="adminModal" style="display:none" onclick="if(event.target===this&&adminUnlocked)closeAdmin()">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Admin Panel</span>
+      <button class="modal-close" onclick="closeAdmin()">×</button>
+    </div>
+    <div class="modal-body" id="adminBody">
+      <div class="pw-gate" id="pwGate">
+        <p>Enter admin password</p>
+        <input type="password" id="pwInput" placeholder="••••••••" onkeydown="if(event.key==='Enter')checkPw()">
+        <button class="btn btn-gold" onclick="checkPw()">Unlock</button>
+        <span class="pw-error" id="pwError"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+// CONFIG
+// ══════════════════════════════════════════
+const BIN_ID = '69d31dcc856a682189024e2a';
+const API_KEY = '$2a$10$bi8u/5Db8qyxEsv/QYyvuu03trS2sjASrsf0TXa.m3CIfARihdZdS';
+const ADMIN_PW = 'franktowngoats123!';
+const POLL_INTERVAL = 8000;  // 8s (JSONBin) — matches Toon Squad
+const ESPN_POLL = 10000;  // 10s (ESPN)
+
+const PLAYERS = ['Christian','Nick','Phil','Shaun','Ben','John','Josh','Sam'];
+
+const MAJORS = [
+  { id: 'masters2026',      name: 'The Masters',         year: 2026, dates: 'Apr 10–13', course: 'Augusta National',       espnId: '401703510' },
+  { id: 'pga2026',          name: 'PGA Championship',    year: 2026, dates: 'May 21–24', course: 'Quail Hollow Club',       espnId: null },
+  { id: 'usopen2026',       name: 'U.S. Open',           year: 2026, dates: 'Jun 18–21', course: 'Shinnecock Hills',        espnId: null },
+  { id: 'theopen2026',      name: 'The Open Championship', year: 2026, dates: 'Jul 16–19', course: 'Royal Portrush',        espnId: null },
+];
+
+// ══════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════
+let state = null;
+let activeMajorId = MAJORS[0].id;
+let adminUnlocked = false;
+let espnData = {}; // keyed by majorId
+let pollTimer = null;
+let espnTimer = null;
+
+// ══════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════
+async function init() {
+  renderTabs();
+  await syncPull();
+  startPolling();
+}
+
+function startPolling() {
+  if (pollTimer) clearInterval(pollTimer);
+  if (espnTimer) clearInterval(espnTimer);
+  pollTimer = setInterval(syncPull, POLL_INTERVAL);
+  espnTimer = setInterval(() => fetchESPN(activeMajorId), ESPN_POLL);
+}
+
+// ══════════════════════════════════════════
+// JSONBIN
+// ══════════════════════════════════════════
+let lastHash = '';
+
+async function syncPull() {
+  setSyncStatus('syncing');
+  try {
+    const r = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
+      headers: { 'X-Master-Key': API_KEY }
+    });
+    const j = await r.json();
+    const raw = j.record;
+    const h = JSON.stringify(raw);
+    if (h !== lastHash) {
+      lastHash = h;
+      state = migrateState(raw);
+      setSyncStatus('live');
+      await fetchESPN(activeMajorId);
+      renderMain();
+    } else {
+      setSyncStatus('live');
+    }
+  } catch(e) {
+    setSyncStatus('error');
+    console.error(e);
+  }
+}
+
+async function syncPush() {
+  setSyncStatus('syncing');
+  try {
+    await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'X-Master-Key': API_KEY },
+      body: JSON.stringify(state)
+    });
+    setSyncStatus('live');
+    showToast('Saved ✓');
+    renderMain();
+    if (adminUnlocked) renderAdmin();
+  } catch(e) {
+    setSyncStatus('error');
+    showToast('Save failed');
+  }
+}
+
+function migrateState(raw) {
+  if (!raw || raw.init) raw = {};
+  if (!raw.majors) raw.majors = {};
+  MAJORS.forEach(m => {
+    if (!raw.majors[m.id]) raw.majors[m.id] = {
+      rosters: {},       // { playerName: { picks: [], alternate: '' } }
+      statuses: {},      // { golferName: 'active'|'missed_cut'|'withdrawn'|'winner' }
+      potExtra: {},      // { playerName: count of $5 additions }
+      complete: false,
+      teamWinner: '',
+      majorWinner: '',
+    };
+    PLAYERS.forEach(p => {
+      if (!raw.majors[m.id].rosters[p]) raw.majors[m.id].rosters[p] = { picks: ['','','','',''], alternate: '' };
+      if (!raw.majors[m.id].potExtra[p]) raw.majors[m.id].potExtra[p] = 0;
+    });
+  });
+  return raw;
+}
+
+// ══════════════════════════════════════════
+// ESPN
+// ══════════════════════════════════════════
+async function fetchESPN(majorId) {
+  const major = MAJORS.find(m => m.id === majorId);
+  if (!major || !major.espnId) return;
+  try {
+    const url = `https://site.api.espn.com/apis/site/v2/sports/golf/leaderboard?event=${major.espnId}`;
+    const r = await fetch(url);
+    const j = await r.json();
+    const competitors = j?.events?.[0]?.competitions?.[0]?.competitors || [];
+    const scores = {};
+    competitors.forEach(c => {
+      const name = c.athlete?.displayName || '';
+      if (!name) return;
+
+      // to-par score: normalize '0' to 'E'
+      let scoreDisp = c.score?.displayValue || 'E';
+      if (scoreDisp === '0') scoreDisp = 'E';
+
+      // Numeric to-par for summing team scores
+      let toPar = 0;
+      if (scoreDisp === 'E') toPar = 0;
+      else { const n = parseInt(scoreDisp); toPar = isNaN(n) ? 0 : n; }
+
+      // Position label (T2, 1, etc.)
+      const pos = c.status?.position?.displayName || '';
+
+      // Thru hole — ESPN stores as status.thru (int) or type.shortDetail ("F", "Thru 14")
+      const thruRaw = c.status?.thru;
+      const shortDetail = c.status?.type?.shortDetail || '';
+      let thru = '';
+      if (shortDetail === 'F' || shortDetail === 'F*') thru = 'F';
+      else if (thruRaw != null && thruRaw !== '') thru = `${thruRaw}`;
+      else if (shortDetail) thru = shortDetail;
+
+      // Cut detection
+      const statusId = c.status?.type?.id || '';
+      const cut = statusId === 'cut' || shortDetail.toLowerCase().includes('cut');
+
+      // Today's round score (last linescore entry)
+      const todayVal = c.linescores?.slice(-1)?.[0]?.value ?? null;
+      const todayDisp = todayVal != null
+        ? (todayVal === 0 ? 'E' : (todayVal > 0 ? `+${todayVal}` : `${todayVal}`))
+        : '';
+
+      scores[name.toLowerCase()] = { score: scoreDisp, toPar, pos, thru, todayDisp, cut };
+    });
+    espnData[majorId] = scores;
+    if (majorId === activeMajorId) renderMain();
+  } catch(e) {
+    console.warn('ESPN fetch failed', e);
+  }
+}
+
+function getGolferScore(majorId, golferName) {
+  const data = espnData[majorId];
+  if (!data) return null;
+  const key = golferName.toLowerCase().trim();
+  // Try exact, then partial match
+  if (data[key]) return data[key];
+  for (const k of Object.keys(data)) {
+    if (k.includes(key) || key.includes(k.split(' ').pop())) return data[k];
+  }
+  return null;
+}
+
+// ══════════════════════════════════════════
+// POT CALC
+// ══════════════════════════════════════════
+function calcPot(majorId) {
+  if (!state) return { base: 0, extra: 0, total: 0, half: 0 };
+  const mData = state.majors[majorId];
+  const base = PLAYERS.length * 20;
+  let extra = 0;
+  PLAYERS.forEach(p => { extra += (mData.potExtra[p] || 0) * 5; });
+  const total = base + extra;
+  return { base, extra, total, half: total / 2 };
+}
+
+// ══════════════════════════════════════════
+// TEAM SCORE CALC
+// ══════════════════════════════════════════
+function calcTeamScore(majorId, playerName) {
+  if (!state) return { score: null, scorers: [] };
+  const mData = state.majors[majorId];
+  const roster = mData.rosters[playerName];
+  if (!roster) return { score: null, scorers: [] };
+
+  let total = 0;
+  let hasAny = false;
+  const scorers = [];
+
+  roster.picks.forEach(g => {
+    if (!g) return;
+    const status = mData.statuses[g] || 'active';
+    if (status === 'missed_cut' || status === 'withdrawn') {
+      scorers.push({ name: g, status, score: null });
+      return;
+    }
+    const espn = getGolferScore(majorId, g);
+    let toPar = null;
+    if (espn) {
+      // Use pre-parsed numeric toPar from fetchESPN
+      toPar = espn.toPar ?? 0;
+      hasAny = true;
+    }
+    scorers.push({ name: g, status, score: toPar, espn });
+    if (toPar !== null) total += toPar;
+  });
+
+  return { score: hasAny ? total : null, scorers };
+}
+
+// ══════════════════════════════════════════
+// RENDER TABS
+// ══════════════════════════════════════════
+function renderTabs() {
+  const el = document.getElementById('majorTabs');
+  el.innerHTML = MAJORS.map(m => `
+    <button class="tab${m.id===activeMajorId?' active':''}" onclick="switchMajor('${m.id}')">
+      ${m.name}
+      <span class="tab-year">${m.year} · ${m.dates}</span>
+    </button>
+  `).join('');
+}
+
+function switchMajor(id) {
+  activeMajorId = id;
+  renderTabs();
+  fetchESPN(id);
+  renderMain();
+}
+
+// ══════════════════════════════════════════
+// RENDER MAIN
+// ══════════════════════════════════════════
+function renderMain() {
+  if (!state) return;
+  const major = MAJORS.find(m => m.id === activeMajorId);
+  const mData = state.majors[activeMajorId];
+  const pot = calcPot(activeMajorId);
+  const hasRosters = PLAYERS.some(p => mData.rosters[p]?.picks?.some(g => g));
+  const espn = espnData[activeMajorId];
+
+  // Build team scores
+  const teamScores = PLAYERS.map(p => {
+    const ts = calcTeamScore(activeMajorId, p);
+    const missedCount = mData.rosters[p]?.picks?.filter(g => g && (mData.statuses[g]==='missed_cut'||mData.statuses[g]==='withdrawn')).length || 0;
+    return { player: p, ...ts, missedCount };
+  }).sort((a,b) => {
+    if (a.score === null && b.score === null) return 0;
+    if (a.score === null) return 1;
+    if (b.score === null) return -1;
+    return a.score - b.score;
+  });
+
+  // Status badge
+  const now = new Date();
+  const start = new Date('2026-04-10');
+  const end = new Date('2026-04-13T23:59:00');
+  let statusBadge = '';
+  if (now < start) statusBadge = `<span class="round-badge round-upcoming">Upcoming · ${major.dates}</span>`;
+  else if (now > end || mData.complete) statusBadge = `<span class="round-badge round-complete">Complete</span>`;
+  else statusBadge = `<span class="round-badge round-live">● Live</span>`;
+
+  let html = '';
+
+  // HERO
+  html += `
+    <div class="major-hero">
+      <div class="major-info">
+        <h2>${major.name}</h2>
+        <div class="major-meta">${major.year} &nbsp;·&nbsp; ${major.course} &nbsp;·&nbsp; ${major.dates} &nbsp;&nbsp;${statusBadge}</div>
+      </div>
+      <div class="pot-display">
+        <div class="pot-amount">$${pot.total}</div>
+        <div class="pot-label">Total Pot</div>
+        <div class="pot-breakdown">$${pot.half} team · $${pot.half} major winner${pot.extra ? ` · +$${pot.extra} penalties` : ''}</div>
+      </div>
+    </div>
+  `;
+
+  // WINNER BANNERS
+  if (mData.majorWinner) {
+    html += `
+      <div class="winner-banner">
+        <div class="winner-trophy">🏆</div>
+        <div class="winner-text">
+          <h3>Major Champion: ${mData.majorWinner}</h3>
+          <p>Drafted by ${PLAYERS.find(p => mData.rosters[p]?.picks?.includes(mData.majorWinner)) || 'unknown'} · $${pot.half} prize</p>
+        </div>
+      </div>
+    `;
+  }
+  if (mData.teamWinner) {
+    html += `
+      <div class="winner-banner">
+        <div class="winner-trophy">🥇</div>
+        <div class="winner-text">
+          <h3>Low Team: ${mData.teamWinner}</h3>
+          <p>Best combined score · $${pot.half} prize</p>
+        </div>
+      </div>
+    `;
+  }
+
+  if (!hasRosters) {
+    html += `<div class="empty-state"><p>Draft not yet entered — use Admin to set rosters</p></div>`;
+    document.getElementById('mainContent').innerHTML = html;
+    return;
+  }
+
+  // TEAM STANDINGS
+  html += `
+    <div class="section-header">
+      <span class="section-title">Team Standings</span>
+      ${espn ? '<span style="font-family:\'DM Mono\',monospace;font-size:0.65rem;color:var(--gold-light);opacity:0.6">Live via ESPN</span>' : ''}
+    </div>
+    <div class="standings-card">
+      <table class="lb-table">
+        <thead>
+          <tr>
+            <th style="width:36px">Pos</th>
+            <th>Player & Roster</th>
+            <th class="num">Score</th>
+            <th class="num">Cuts</th>
+            <th class="num">Pot Add</th>
+          </tr>
+        </thead>
+        <tbody>
+  `;
+
+  teamScores.forEach((ts, i) => {
+    const isLeader = i === 0 && ts.score !== null;
+    const roster = mData.rosters[ts.player];
+    const pills = roster?.picks?.map(g => {
+      if (!g) return '';
+      const st = mData.statuses[g] || 'active';
+      const espnG = getGolferScore(activeMajorId, g);
+      const scoreStr = espnG ? ` ${espnG.score}` : '';
+      const isMajorWinner = mData.majorWinner === g;
+      let cls = st === 'missed_cut' ? 'missed-cut' : st === 'withdrawn' ? 'withdrawn' : isMajorWinner ? 'winner' : '';
+      return `<span class="golfer-pill ${cls}">${g}${scoreStr}</span>`;
+    }).join('') || '';
+
+    const altName = roster?.alternate;
+    const altPill = altName ? `<span class="golfer-pill alternate" title="Alternate">ALT: ${altName}</span>` : '';
+
+    const scoreDisp = ts.score !== null
+      ? `<span class="score-val ${ts.score < 0 ? 'score-under' : ts.score > 0 ? 'score-over' : 'score-even'}">${ts.score > 0 ? '+' : ''}${ts.score}</span>`
+      : `<span style="color:rgba(200,200,200,0.3);font-size:0.75rem;font-family:'DM Mono',monospace">–</span>`;
+
+    const potAdd = mData.potExtra[ts.player] * 5;
+
+    html += `
+      <tr class="${isLeader ? 'leader' : ''}">
+        <td><span class="rank-badge${isLeader ? ' gold' : ''}">${i+1}</span></td>
+        <td>
+          <div class="player-name">${ts.player}</div>
+          <div class="golfer-pills">${pills}${altPill}</div>
+        </td>
+        <td class="num">${scoreDisp}</td>
+        <td class="num" style="font-family:'DM Mono',monospace;font-size:0.8rem;color:${ts.missedCount>0?'var(--red-light)':'rgba(200,200,200,0.4)'}">${ts.missedCount || '–'}</td>
+        <td class="num" style="font-family:'DM Mono',monospace;font-size:0.8rem;color:${potAdd>0?'var(--red-light)':'rgba(200,200,200,0.4)'}">${potAdd > 0 ? `+$${potAdd}` : '–'}</td>
+      </tr>
+    `;
+  });
+
+  html += `</tbody></table></div>`;
+
+  // GOLFER LEADERBOARD
+  if (espn) {
+    const allGolfers = [];
+    PLAYERS.forEach(p => {
+      const roster = mData.rosters[p];
+      roster?.picks?.forEach(g => {
+        if (!g) return;
+        const st = mData.statuses[g] || 'active';
+        const espnG = getGolferScore(activeMajorId, g);
+        allGolfers.push({ name: g, owner: p, status: st, espn: espnG });
+      });
+    });
+    allGolfers.sort((a,b) => {
+      if (!a.espn && !b.espn) return 0;
+      if (!a.espn) return 1; if (!b.espn) return -1;
+      const sa = a.espn.score === 'E' ? 0 : parseInt(a.espn.score)||0;
+      const sb = b.espn.score === 'E' ? 0 : parseInt(b.espn.score)||0;
+      return sa - sb;
+    });
+
+    html += `<div class="divider"></div>`;
+    html += `<div class="section-header"><span class="section-title">Drafted Golfers · Live Scores</span></div>`;
+    html += `<div class="golfer-lb"><div class="golfer-lb-header"><span>Golfer</span><span>Score / Thru</span></div>`;
+
+    allGolfers.forEach((g, i) => {
+      const score = g.espn?.score || '–';
+      const thru = g.espn?.thru ? `Thru ${g.espn.thru}` : (g.espn?.pos || '');
+      const scoreCls = score.startsWith('-') ? 'score-under' : score.startsWith('+') ? 'score-over' : score === 'E' ? 'score-even' : '';
+      const isCut = g.status === 'missed_cut' || g.status === 'withdrawn';
+      const isWinner = mData.majorWinner === g.name;
+
+      html += `
+        <div class="golfer-row" style="${isCut ? 'opacity:0.4' : ''}">
+          <div class="golfer-pos">${isCut ? 'CUT' : (i+1)}</div>
+          <div class="golfer-name-cell">
+            <div class="golfer-name-main">${g.name}${isWinner ? ' 🏆' : ''}</div>
+            <div class="golfer-owner">${g.owner}</div>
+          </div>
+          <div class="golfer-score-cell">
+            <div class="score-val ${scoreCls}">${isCut ? '<span class="missed-cut-badge">MISSED CUT</span>' : score}</div>
+            <div class="golfer-total">${isCut ? '' : (thru ? 'Thru ' + thru : '') + (g.espn?.todayDisp ? ' · Today ' + g.espn.todayDisp : '')}</div>
+          </div>
+        </div>
+      `;
+    });
+
+    html += `</div>`;
+  }
+
+  // OVERALL STANDINGS (all majors)
+  html += `<div class="divider"></div>`;
+  html += `<div class="section-header"><span class="section-title">Season Standings</span></div>`;
+  html += renderOverallStandings();
+
+  document.getElementById('mainContent').innerHTML = html;
+}
+
+function renderOverallStandings() {
+  const totals = {};
+  PLAYERS.forEach(p => { totals[p] = { net: 0, majors: {} }; });
+
+  MAJORS.forEach(m => {
+    const mData = state.majors[m.id];
+    const pot = calcPot(m.id);
+    PLAYERS.forEach(p => {
+      const paid = 20 + (mData.potExtra[p] || 0) * 5;
+      let won = 0;
+      if (mData.teamWinner === p) won += pot.half;
+      const roster = mData.rosters[p];
+      if (mData.majorWinner && roster?.picks?.includes(mData.majorWinner)) won += pot.half;
+      totals[p].net += (won - paid);
+      totals[p].majors[m.id] = won - paid;
+    });
+  });
+
+  const sorted = PLAYERS.slice().sort((a,b) => totals[b].net - totals[a].net);
+
+  let html = `
+    <div class="standings-card">
+      <table class="overall-table">
+        <thead>
+          <tr>
+            <th>Player</th>
+            ${MAJORS.map(m => `<th class="major-col-header">${m.name.replace('The ','').replace(' Championship','')}</th>`).join('')}
+            <th>Net</th>
+          </tr>
+        </thead>
+        <tbody>
+  `;
+
+  sorted.forEach(p => {
+    html += `<tr>
+      <td>${p}</td>
+      ${MAJORS.map(m => {
+        const v = totals[p].majors[m.id];
+        const cls = v > 0 ? 'amount-positive' : v < 0 ? 'amount-negative' : '';
+        return `<td class="${cls}">${v > 0 ? '+' : ''}$${v}</td>`;
+      }).join('')}
+      <td class="${totals[p].net > 0 ? 'amount-positive' : totals[p].net < 0 ? 'amount-negative' : ''}" style="font-weight:700">${totals[p].net > 0 ? '+' : ''}$${totals[p].net}</td>
+    </tr>`;
+  });
+
+  html += `</tbody></table></div>`;
+  return html;
+}
+
+// ══════════════════════════════════════════
+// ADMIN
+// ══════════════════════════════════════════
+function openAdmin() {
+  document.getElementById('adminModal').style.display = 'flex';
+  if (!adminUnlocked) {
+    document.getElementById('pwGate').style.display = 'flex';
+    setTimeout(() => document.getElementById('pwInput')?.focus(), 100);
+  } else {
+    renderAdmin();
+  }
+}
+
+function closeAdmin() {
+  document.getElementById('adminModal').style.display = 'none';
+}
+
+function checkPw() {
+  const val = document.getElementById('pwInput').value;
+  if (val === ADMIN_PW) {
+    adminUnlocked = true;
+    document.getElementById('pwGate').style.display = 'none';
+    renderAdmin();
+  } else {
+    document.getElementById('pwError').textContent = 'Incorrect password';
+    document.getElementById('pwInput').value = '';
+  }
+}
+
+function renderAdmin() {
+  const major = MAJORS.find(m => m.id === activeMajorId);
+  const mData = state.majors[activeMajorId];
+
+  // Collect all golfer names from rosters
+  const allGolfers = new Set();
+  PLAYERS.forEach(p => {
+    mData.rosters[p]?.picks?.forEach(g => { if(g) allGolfers.add(g); });
+    if (mData.rosters[p]?.alternate) allGolfers.add(mData.rosters[p].alternate);
+  });
+
+  let html = `
+    <!-- Major Selector -->
+    <div class="admin-section">
+      <h3>Editing Major</h3>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Active Major</label>
+          <select onchange="switchMajor(this.value);renderAdmin()">
+            ${MAJORS.map(m => `<option value="${m.id}" ${m.id===activeMajorId?'selected':''}>${m.name} ${m.year}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rosters -->
+    <div class="admin-section">
+      <h3>Draft Rosters — ${major.name} ${major.year}</h3>
+      <div class="player-roster-grid" id="rosterGrid">
+        ${PLAYERS.map(p => {
+          const roster = mData.rosters[p];
+          return `
+            <div class="player-roster-card">
+              <div class="player-roster-name">${p}</div>
+              <div class="roster-inputs">
+                ${[0,1,2,3,4].map(i => `
+                  <div class="roster-input-row">
+                    <span class="roster-slot-label">${i+1}</span>
+                    <input type="text" placeholder="Golfer name" value="${roster.picks[i]||''}"
+                      oninput="updatePick('${p}',${i},this.value)"
+                      data-player="${p}" data-slot="${i}">
+                  </div>
+                `).join('')}
+                <div class="roster-input-row" style="margin-top:4px">
+                  <span class="roster-slot-label" style="color:var(--gold-light);opacity:0.4">ALT</span>
+                  <input type="text" placeholder="Alternate (withdrawal only)" value="${roster.alternate||''}"
+                    class="alt-input" oninput="updateAlt('${p}',this.value)">
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+      <div style="margin-top:14px">
+        <button class="btn btn-gold" onclick="saveRosters()">Save Rosters</button>
+      </div>
+    </div>
+
+    <!-- Golfer Status -->
+    <div class="admin-section">
+      <h3>Golfer Status & Penalties</h3>
+      ${allGolfers.size === 0 ? '<p style="font-size:0.78rem;color:rgba(200,200,200,0.4);font-family:\'DM Mono\',monospace">Enter rosters first</p>' : `
+      <table class="status-table">
+        <thead>
+          <tr>
+            <th>Golfer</th>
+            <th>Owner</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${Array.from(allGolfers).map(g => {
+            const owner = PLAYERS.find(p => mData.rosters[p]?.picks?.includes(g) || mData.rosters[p]?.alternate === g) || '';
+            const status = mData.statuses[g] || 'active';
+            return `
+              <tr>
+                <td>${g}</td>
+                <td style="font-family:'DM Mono',monospace;font-size:0.72rem;color:var(--gold-light);opacity:0.7">${owner}</td>
+                <td>
+                  <select class="status-select" onchange="updateStatus('${g}','${owner}',this.value)">
+                    <option value="active" ${status==='active'?'selected':''}>Active</option>
+                    <option value="missed_cut" ${status==='missed_cut'?'selected':''}>Missed Cut</option>
+                    <option value="withdrawn" ${status==='withdrawn'?'selected':''}>Withdrawn</option>
+                    <option value="winner" ${status==='winner'?'selected':''}>Winner 🏆</option>
+                  </select>
+                </td>
+              </tr>
+            `;
+          }).join('')}
+        </tbody>
+      </table>
+      `}
+    </div>
+
+    <!-- Pot Extras -->
+    <div class="admin-section">
+      <h3>Missed Cut Penalties (×$5)</h3>
+      <table class="status-table">
+        <thead><tr><th>Player</th><th>Cut Golfers</th><th># Penalties</th></tr></thead>
+        <tbody>
+          ${PLAYERS.map(p => {
+            const count = mData.potExtra[p] || 0;
+            return `
+              <tr>
+                <td>${p}</td>
+                <td style="font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--gold-light);opacity:0.6">
+                  ${(mData.rosters[p]?.picks||[]).filter(g=>g&&(mData.statuses[g]==='missed_cut'||mData.statuses[g]==='withdrawn')).join(', ') || '–'}
+                </td>
+                <td>
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <button class="btn btn-outline btn-sm" onclick="adjPot('${p}',-1)">−</button>
+                    <span style="font-family:'DM Mono',monospace;font-size:0.85rem;width:20px;text-align:center">${count}</span>
+                    <button class="btn btn-outline btn-sm" onclick="adjPot('${p}',1)">+</button>
+                    <span style="font-family:'DM Mono',monospace;font-size:0.72rem;color:var(--red-light)">=$${count*5}</span>
+                  </div>
+                </td>
+              </tr>
+            `;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Winner Declaration -->
+    <div class="admin-section">
+      <h3>Declare Winners</h3>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Major Champion (golfer name)</label>
+          <input type="text" value="${mData.majorWinner||''}" oninput="state.majors[activeMajorId].majorWinner=this.value" placeholder="e.g. Scottie Scheffler">
+        </div>
+        <div class="form-group">
+          <label>Low Team Winner (player)</label>
+          <select onchange="state.majors[activeMajorId].teamWinner=this.value">
+            <option value="">– Not set –</option>
+            ${PLAYERS.map(p => `<option value="${p}" ${mData.teamWinner===p?'selected':''}>${p}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div style="margin-top:10px">
+        <button class="btn btn-gold" onclick="saveWinners()">Save Winners</button>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('adminBody').innerHTML = html;
+}
+
+// ── Admin helpers ──
+function updatePick(player, slot, val) {
+  state.majors[activeMajorId].rosters[player].picks[slot] = val.trim();
+}
+function updateAlt(player, val) {
+  state.majors[activeMajorId].rosters[player].alternate = val.trim();
+}
+function saveRosters() { syncPush(); }
+
+function updateStatus(golfer, owner, status) {
+  state.majors[activeMajorId].statuses[golfer] = status;
+  // Auto-sync pot penalties
+  if (owner && (status === 'missed_cut' || status === 'withdrawn')) {
+    // Count how many of this player's picks are cut/withdrawn
+    const picks = state.majors[activeMajorId].rosters[owner]?.picks || [];
+    const cutCount = picks.filter(g => g && (state.majors[activeMajorId].statuses[g]==='missed_cut'||state.majors[activeMajorId].statuses[g]==='withdrawn')).length;
+    state.majors[activeMajorId].potExtra[owner] = cutCount;
+  } else if (owner && status === 'active') {
+    const picks = state.majors[activeMajorId].rosters[owner]?.picks || [];
+    const cutCount = picks.filter(g => g && (state.majors[activeMajorId].statuses[g]==='missed_cut'||state.majors[activeMajorId].statuses[g]==='withdrawn')).length;
+    state.majors[activeMajorId].potExtra[owner] = cutCount;
+  }
+  syncPush();
+}
+
+function adjPot(player, delta) {
+  const cur = state.majors[activeMajorId].potExtra[player] || 0;
+  state.majors[activeMajorId].potExtra[player] = Math.max(0, cur + delta);
+  syncPush();
+}
+
+function saveWinners() {
+  // Also mark winner status on golfer
+  const winner = state.majors[activeMajorId].majorWinner;
+  if (winner) state.majors[activeMajorId].statuses[winner] = 'winner';
+  syncPush();
+}
+
+// ══════════════════════════════════════════
+// UI HELPERS
+// ══════════════════════════════════════════
+function setSyncStatus(s) {
+  const dot = document.getElementById('syncDot');
+  const label = document.getElementById('syncLabel');
+  if (s === 'live') { dot.className = 'sync-dot live'; label.textContent = 'Live'; }
+  else if (s === 'error') { dot.className = 'sync-dot error'; label.textContent = 'Error'; }
+  else { dot.className = 'sync-dot'; label.textContent = 'Syncing…'; }
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ══════════════════════════════════════════
+// VISIBILITY — re-fetch instantly when tab regains focus
+// ══════════════════════════════════════════
+let lastESPNFetch = 0;
+const ESPN_DEBOUNCE = 8000;
+
+const _origFetchESPN = fetchESPN;
+fetchESPN = async function(majorId) {
+  const now = Date.now();
+  if (now - lastESPNFetch < ESPN_DEBOUNCE) return;
+  lastESPNFetch = now;
+  return _origFetchESPN(majorId);
+};
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') fetchESPN(activeMajorId);
+});
+window.addEventListener('focus', () => fetchESPN(activeMajorId));
+
+// ══════════════════════════════════════════
+// BOOT
+// ══════════════════════════════════════════
+init();
+</script>
+</body>
+</html>
