@@ -2148,7 +2148,6 @@ function renderAdmin() {
                       <input type="text" placeholder="Golfer name" value="${roster.picks[i]||''}"
                         oninput="handleRosterInput(this,'${p}',${i})"
                         onfocus="handleRosterInput(this,'${p}',${i})"
-                        onblur="setTimeout(closeAllDropdowns,150)"
                         autocomplete="off"
                         data-player="${p}" data-slot="${i}">
                     </div>
@@ -2756,33 +2755,22 @@ async function fetchField(majorId) {
   if (fieldCache[majorId]) return fieldCache[majorId];
   const hardcoded = HARDCODED_FIELDS[majorId] || [];
   const major = MAJORS.find(m => m.id === majorId);
-
-  if (!major?.espnId) {
-    fieldCache[majorId] = hardcoded.sort();
-    return fieldCache[majorId];
+  // Pre-populate cache immediately with hardcoded so it's available synchronously
+  fieldCache[majorId] = [...hardcoded].sort();
+  // Then try to enrich with ESPN in background
+  if (major?.espnId) {
+    try {
+      const url = `https://site.api.espn.com/apis/site/v2/sports/golf/leaderboard?event=${major.espnId}`;
+      const r = await fetch(url);
+      const j = await r.json();
+      const competitors = j?.events?.[0]?.competitions?.[0]?.competitors || [];
+      const espnNames = competitors.map(c => c.athlete?.displayName || '').filter(Boolean);
+      if (espnNames.length >= 20) {
+        fieldCache[majorId] = [...new Set([...espnNames, ...hardcoded])].sort();
+      }
+    } catch(e) { /* keep hardcoded */ }
   }
-
-  try {
-    const url = `https://site.api.espn.com/apis/site/v2/sports/golf/leaderboard?event=${major.espnId}`;
-    const r = await fetch(url);
-    const j = await r.json();
-    const competitors = j?.events?.[0]?.competitions?.[0]?.competitors || [];
-    const espnNames = competitors
-      .map(c => c.athlete?.displayName || '')
-      .filter(Boolean);
-
-    // Merge: if ESPN has 20+ players use ESPN, otherwise supplement with hardcoded
-    const merged = espnNames.length >= 20
-      ? espnNames
-      : [...new Set([...espnNames, ...hardcoded])];
-
-    fieldCache[majorId] = merged.sort();
-    return fieldCache[majorId];
-  } catch(e) {
-    // Fall back to hardcoded on any error
-    fieldCache[majorId] = hardcoded.sort();
-    return fieldCache[majorId];
-  }
+  return fieldCache[majorId];
 }
 
 function closeAllDropdowns() {
@@ -2792,7 +2780,6 @@ function closeAllDropdowns() {
 
 function highlightMatch(name, query) {
   if (!query) return name;
-  // Try to highlight each word in query
   let result = name;
   const words = query.trim().split(' ').filter(Boolean);
   words.forEach(word => {
@@ -2802,43 +2789,23 @@ function highlightMatch(name, query) {
   return result;
 }
 
-async function handleRosterInput(input, player, slot) {
+function showDropdown(input, player, slot) {
   const query = input.value.trim();
   closeAllDropdowns();
-
-  // Update state as they type
   updatePick(player, slot, query);
 
-  if (query.length < 1) return;
+  const names = fieldCache[activeMajorId] || HARDCODED_FIELDS[activeMajorId] || [];
+  if (query.length < 1 || names.length === 0) return;
 
-  // Show loading
-  const wrap = input.closest('.autocomplete-wrap') || input.parentElement;
-  const loadingEl = document.createElement('div');
-  loadingEl.className = 'autocomplete-dropdown';
-  loadingEl.innerHTML = '<div class="autocomplete-loading"><span class="loading-spinner"></span> Loading field…</div>';
-  wrap.appendChild(loadingEl);
-  activeDropdown = loadingEl;
-
-  const names = await fetchField(activeMajorId);
-
-  // Remove loading if still showing
-  if (activeDropdown === loadingEl) {
-    loadingEl.remove();
-    activeDropdown = null;
-  }
-
-  if (!document.body.contains(input)) return; // input was removed
-
-  // Filter matches — prioritize starts-with on full name or any word, then contains
   const q = query.toLowerCase();
   const words = q.split(' ').filter(Boolean);
   const score = name => {
     const n = name.toLowerCase();
     const parts = n.split(' ');
-    if (n.startsWith(q)) return 0; // full name starts with query (highest)
-    if (parts.some(p => p.startsWith(q))) return 1; // any word starts with query
-    if (words.every(w => n.includes(w))) return 2; // all words appear somewhere
-    if (n.includes(q)) return 3; // substring match
+    if (n.startsWith(q)) return 0;
+    if (parts.some(p => p.startsWith(q))) return 1;
+    if (words.every(w => n.includes(w))) return 2;
+    if (n.includes(q)) return 3;
     return 99;
   };
   const matches = names
@@ -2850,18 +2817,25 @@ async function handleRosterInput(input, player, slot) {
 
   if (matches.length === 0) return;
 
+  const wrap = input.closest('.autocomplete-wrap');
+  if (!wrap) return;
+
   const dropdown = document.createElement('div');
   dropdown.className = 'autocomplete-dropdown';
-  matches.forEach((name, i) => {
+  matches.forEach(name => {
     const item = document.createElement('div');
     item.className = 'autocomplete-item';
     item.innerHTML = highlightMatch(name, query);
-    item.addEventListener('mousedown', e => {
-      e.preventDefault(); // prevent blur before click
+    // Use touchstart + mousedown for both mobile and desktop
+    const select = e => {
+      e.preventDefault();
+      e.stopPropagation();
       input.value = name;
       updatePick(player, slot, name);
       closeAllDropdowns();
-    });
+    };
+    item.addEventListener('mousedown', select);
+    item.addEventListener('touchstart', select, { passive: false });
     dropdown.appendChild(item);
   });
 
@@ -2869,11 +2843,21 @@ async function handleRosterInput(input, player, slot) {
   activeDropdown = dropdown;
 }
 
-// Close dropdown when clicking outside
-document.addEventListener('click', e => {
-  if (!e.target.closest('.autocomplete-wrap') && !e.target.closest('.roster-input-row')) {
-    closeAllDropdowns();
+async function handleRosterInput(input, player, slot) {
+  // Ensure field is cached (sync part uses hardcoded immediately)
+  if (!fieldCache[activeMajorId]) {
+    fieldCache[activeMajorId] = [...(HARDCODED_FIELDS[activeMajorId] || [])].sort();
+    fetchField(activeMajorId); // enrich in background, don't await
   }
+  showDropdown(input, player, slot);
+}
+
+// Close on outside tap/click — longer delay for mobile
+document.addEventListener('touchstart', e => {
+  if (!e.target.closest('.autocomplete-wrap')) closeAllDropdowns();
+}, { passive: true });
+document.addEventListener('click', e => {
+  if (!e.target.closest('.autocomplete-wrap')) closeAllDropdowns();
 });
 
 // ══════════════════════════════════════════
