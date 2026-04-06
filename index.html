@@ -2695,6 +2695,36 @@ function renderPlayerScorecard(competitor, golferName) {
 }
 
 
+
+// ══════════════════════════════════════════
+// HARDCODED FIELDS (fallback when ESPN not populated)
+// ══════════════════════════════════════════
+const HARDCODED_FIELDS = {
+  masters2026: [
+    "Scottie Scheffler", "Rory McIlroy", "Bryson DeChambeau", "Collin Morikawa",
+    "Xander Schauffele", "Brooks Koepka", "Jon Rahm", "Dustin Johnson",
+    "Patrick Cantlay", "Viktor Hovland", "Ludvig Aberg", "Tommy Fleetwood",
+    "Shane Lowry", "Russell Henley", "Hideki Matsuyama", "Tony Finau",
+    "Cameron Smith", "Joaquin Niemann", "Min Woo Lee", "Tom Kim",
+    "Corey Conners", "Adam Scott", "Sepp Straka", "Sungjae Im",
+    "Cameron Young", "Jason Day", "Keegan Bradley", "Billy Horschel",
+    "Max Homa", "Tyrrell Hatton", "Sahith Theegala", "Harris English",
+    "Justin Thomas", "Jordan Spieth", "Will Zalatoris", "Denny McCarthy",
+    "Taylor Pendrith", "Chris Kirk", "Nick Dunlap", "Akshay Bhatia",
+    "Jake Knapp", "Davis Thompson", "Austin Eckroat", "J.T. Poston",
+    "Matthieu Pavon", "Nicolai Hojgaard", "Rasmus Hojgaard", "Robert MacIntyre",
+    "Justin Rose", "Bubba Watson", "Fred Couples", "Bernhard Langer",
+    "Jose Maria Olazabal", "Mike Weir", "Angel Cabrera", "Sandy Lyle",
+    "Larry Mize", "Mark O'Meara", "Ian Woosnam", "Vijay Singh",
+    "Phil Mickelson", "Tiger Woods", "Patrick Reed", "Rickie Fowler",
+    "Matt Fitzpatrick", "Si Woo Kim", "Abraham Ancer", "Emiliano Grillo",
+    "Erik van Rooyen", "Charl Schwartzel", "Marc Leishman", "Louis Oosthuizen",
+    "Thomas Pieters", "Alex Noren", "Victor Perez", "Aaron Rai",
+    "Brian Harman", "Luke List", "Sam Burns", "Scott Stallings",
+    "Scott Gutschewski", "Scott Piercy", "Neal Shipley", "Santiago de la Fuente"
+  ]
+};
+
 // ══════════════════════════════════════════
 // GOLFER AUTOCOMPLETE
 // ══════════════════════════════════════════
@@ -2703,21 +2733,34 @@ let activeDropdown = null;
 
 async function fetchField(majorId) {
   if (fieldCache[majorId]) return fieldCache[majorId];
+  const hardcoded = HARDCODED_FIELDS[majorId] || [];
   const major = MAJORS.find(m => m.id === majorId);
-  if (!major?.espnId) return [];
+
+  if (!major?.espnId) {
+    fieldCache[majorId] = hardcoded.sort();
+    return fieldCache[majorId];
+  }
+
   try {
     const url = `https://site.api.espn.com/apis/site/v2/sports/golf/leaderboard?event=${major.espnId}`;
     const r = await fetch(url);
     const j = await r.json();
     const competitors = j?.events?.[0]?.competitions?.[0]?.competitors || [];
-    const names = competitors
+    const espnNames = competitors
       .map(c => c.athlete?.displayName || '')
-      .filter(Boolean)
-      .sort();
-    fieldCache[majorId] = names;
-    return names;
+      .filter(Boolean);
+
+    // Merge: if ESPN has 20+ players use ESPN, otherwise supplement with hardcoded
+    const merged = espnNames.length >= 20
+      ? espnNames
+      : [...new Set([...espnNames, ...hardcoded])];
+
+    fieldCache[majorId] = merged.sort();
+    return fieldCache[majorId];
   } catch(e) {
-    return [];
+    // Fall back to hardcoded on any error
+    fieldCache[majorId] = hardcoded.sort();
+    return fieldCache[majorId];
   }
 }
 
