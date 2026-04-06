@@ -1398,7 +1398,11 @@
 </nav>
 
 <main class="main" id="mainContent">
-  <div class="empty-state"><p><span class="loading-spinner"></span>Loading…</p><p style="font-size:0.6rem;margin-top:8px;opacity:0.4">Connecting to server</p></div>
+  <div class="empty-state" id="loadingState">
+    <p><span class="loading-spinner"></span>Loading…</p>
+    <p style="font-size:0.6rem;margin-top:8px;opacity:0.4">Connecting to server</p>
+    <div id="debugPanel" style="margin-top:20px;text-align:left;background:rgba(0,0,0,0.3);border:1px solid rgba(201,168,76,0.2);border-radius:6px;padding:12px;max-width:320px;font-family:'DM Mono',monospace;font-size:0.62rem;color:rgba(200,200,200,0.7);line-height:1.8"></div>
+  </div>
 </main>
 
 <div class="toast" id="toast"></div>
@@ -1471,6 +1475,20 @@ let pollTimer = null;
 let espnTimer = null;
 
 // ══════════════════════════════════════════
+// VISIBLE DEBUG (shows on mobile)
+// ══════════════════════════════════════════
+function dbg(msg) {
+  console.log('[FGM]', msg);
+  const el = document.getElementById('debugPanel');
+  if (el) {
+    el.innerHTML += `<div>${msg}</div>`;
+    // keep last 8 lines
+    const lines = el.querySelectorAll('div');
+    if (lines.length > 8) lines[0].remove();
+  }
+}
+
+// ══════════════════════════════════════════
 // LOCAL CACHE — render instantly on load
 // ══════════════════════════════════════════
 const CACHE_KEY = 'fgm_state_v1';
@@ -1518,19 +1536,27 @@ async function syncPull() {
   if (!state) setSyncStatus('syncing');
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 8000); // 8s timeout
+    const timeout = setTimeout(() => controller.abort(), 8000);
+    dbg('Fetching JSONBin...');
     const r = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
       headers: { 'X-Master-Key': API_KEY },
       signal: controller.signal
     });
     clearTimeout(timeout);
+    dbg('Status: ' + r.status);
+    if (!r.ok) {
+      const txt = await r.text();
+      dbg('Error: ' + txt.slice(0, 80));
+      throw new Error('HTTP ' + r.status);
+    }
     const j = await r.json();
+    dbg('Got record: ' + JSON.stringify(Object.keys(j.record || {})));
     const raw = j.record;
     const h = JSON.stringify(raw);
     if (h !== lastHash) {
       lastHash = h;
       state = migrateState(raw);
-      saveCache(raw);           // persist for next page load
+      saveCache(raw);
       setSyncStatus('live');
       await fetchESPN(activeMajorId);
       renderMain();
@@ -1538,13 +1564,20 @@ async function syncPull() {
       setSyncStatus('live');
     }
   } catch(e) {
-    if (e.name === 'AbortError') {
-      setSyncStatus('error');
-      showToast('Connection slow — showing cached data');
+    dbg('FAIL: ' + e.name + ' — ' + e.message);
+    setSyncStatus('error');
+    // If we have cached state, render it and show a non-blocking warning
+    if (state) {
+      renderMain();
+      showToast('Using cached data — tap Refresh to retry');
     } else {
-      setSyncStatus('error');
+      document.getElementById('mainContent').innerHTML = `
+        <div class="empty-state">
+          <p style="color:var(--red-light);font-family:'DM Mono',monospace;font-size:0.75rem">⚠ Could not connect</p>
+          <p style="font-size:0.65rem;margin-top:10px;opacity:0.5;font-family:'DM Mono',monospace">Error: ${e.message}</p>
+          <button class="btn btn-gold" style="margin-top:16px" onclick="syncPull()">Retry</button>
+        </div>`;
     }
-    console.warn('syncPull failed:', e.message);
   }
 }
 
