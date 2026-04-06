@@ -1702,14 +1702,18 @@ function calcTeamScore(majorId, playerName) {
   roster.picks.forEach(g => {
     if (!g) return;
     const status = mData.statuses[g] || 'active';
-    if (status === 'missed_cut' || status === 'withdrawn') {
+    const espn = getGolferScore(majorId, g);
+
+    // Withdrawn golfers don't count at all (no score, no penalty contribution)
+    if (status === 'withdrawn') {
       scorers.push({ name: g, status, score: null });
       return;
     }
-    const espn = getGolferScore(majorId, g);
+
+    // Missed cut: their R1+R2 score still counts toward team total
+    // (owner pays $5 penalty separately, but score is kept)
     let toPar = null;
     if (espn) {
-      // Use pre-parsed numeric toPar from fetchESPN
       toPar = espn.toPar ?? 0;
       hasAny = true;
     }
