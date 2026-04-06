@@ -1376,6 +1376,58 @@
   }
 
 
+  /* ── AUTOCOMPLETE ── */
+  .autocomplete-wrap {
+    position: relative;
+    flex: 1;
+  }
+
+  .autocomplete-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--green-deep);
+    border: 1px solid var(--gold);
+    border-top: none;
+    border-radius: 0 0 4px 4px;
+    max-height: 180px;
+    overflow-y: auto;
+    z-index: 400;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  }
+
+  .autocomplete-item {
+    padding: 8px 12px;
+    font-family: 'Libre Baskerville', serif;
+    font-size: 0.8rem;
+    color: var(--cream);
+    cursor: pointer;
+    border-bottom: 1px solid rgba(201,168,76,0.08);
+    transition: background 0.1s;
+  }
+
+  .autocomplete-item:last-child { border-bottom: none; }
+  .autocomplete-item:hover, .autocomplete-item.selected {
+    background: rgba(201,168,76,0.15);
+    color: var(--gold);
+  }
+
+  .autocomplete-item em {
+    font-style: normal;
+    color: var(--gold);
+    font-weight: 700;
+  }
+
+  .autocomplete-loading {
+    padding: 10px 12px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--gold-light);
+    opacity: 0.6;
+  }
+
+
 </style>
 </head>
 <body>
@@ -2092,9 +2144,14 @@ function renderAdmin() {
                 ${[0,1,2,3,4].map(i => `
                   <div class="roster-input-row">
                     <span class="roster-slot-label">${i+1}</span>
-                    <input type="text" placeholder="Golfer name" value="${roster.picks[i]||''}"
-                      oninput="updatePick('${p}',${i},this.value)"
-                      data-player="${p}" data-slot="${i}">
+                    <div class="autocomplete-wrap">
+                      <input type="text" placeholder="Golfer name" value="${roster.picks[i]||''}"
+                        oninput="handleRosterInput(this,'${p}',${i})"
+                        onfocus="handleRosterInput(this,'${p}',${i})"
+                        onblur="setTimeout(closeAllDropdowns,150)"
+                        autocomplete="off"
+                        data-player="${p}" data-slot="${i}">
+                    </div>
                   </div>
                 `).join('')}
                 <div class="roster-input-row" style="margin-top:4px">
@@ -2636,6 +2693,106 @@ function renderPlayerScorecard(competitor, golferName) {
 
   document.getElementById('pmBody').innerHTML = html;
 }
+
+
+// ══════════════════════════════════════════
+// GOLFER AUTOCOMPLETE
+// ══════════════════════════════════════════
+let fieldCache = {}; // majorId -> [golfer names]
+let activeDropdown = null;
+
+async function fetchField(majorId) {
+  if (fieldCache[majorId]) return fieldCache[majorId];
+  const major = MAJORS.find(m => m.id === majorId);
+  if (!major?.espnId) return [];
+  try {
+    const url = `https://site.api.espn.com/apis/site/v2/sports/golf/leaderboard?event=${major.espnId}`;
+    const r = await fetch(url);
+    const j = await r.json();
+    const competitors = j?.events?.[0]?.competitions?.[0]?.competitors || [];
+    const names = competitors
+      .map(c => c.athlete?.displayName || '')
+      .filter(Boolean)
+      .sort();
+    fieldCache[majorId] = names;
+    return names;
+  } catch(e) {
+    return [];
+  }
+}
+
+function closeAllDropdowns() {
+  document.querySelectorAll('.autocomplete-dropdown').forEach(d => d.remove());
+  activeDropdown = null;
+}
+
+function highlightMatch(name, query) {
+  if (!query) return name;
+  const idx = name.toLowerCase().indexOf(query.toLowerCase());
+  if (idx === -1) return name;
+  return name.slice(0, idx) + '<em>' + name.slice(idx, idx + query.length) + '</em>' + name.slice(idx + query.length);
+}
+
+async function handleRosterInput(input, player, slot) {
+  const query = input.value.trim();
+  closeAllDropdowns();
+
+  // Update state as they type
+  updatePick(player, slot, query);
+
+  if (query.length < 1) return;
+
+  // Show loading
+  const wrap = input.closest('.autocomplete-wrap') || input.parentElement;
+  const loadingEl = document.createElement('div');
+  loadingEl.className = 'autocomplete-dropdown';
+  loadingEl.innerHTML = '<div class="autocomplete-loading"><span class="loading-spinner"></span> Loading field…</div>';
+  wrap.appendChild(loadingEl);
+  activeDropdown = loadingEl;
+
+  const names = await fetchField(activeMajorId);
+
+  // Remove loading if still showing
+  if (activeDropdown === loadingEl) {
+    loadingEl.remove();
+    activeDropdown = null;
+  }
+
+  if (!document.body.contains(input)) return; // input was removed
+
+  // Filter matches — prioritize starts-with, then contains
+  const q = query.toLowerCase();
+  const startsWith = names.filter(n => n.toLowerCase().startsWith(q));
+  const contains = names.filter(n => !n.toLowerCase().startsWith(q) && n.toLowerCase().includes(q));
+  const matches = [...startsWith, ...contains].slice(0, 8);
+
+  if (matches.length === 0) return;
+
+  const dropdown = document.createElement('div');
+  dropdown.className = 'autocomplete-dropdown';
+  matches.forEach((name, i) => {
+    const item = document.createElement('div');
+    item.className = 'autocomplete-item';
+    item.innerHTML = highlightMatch(name, query);
+    item.addEventListener('mousedown', e => {
+      e.preventDefault(); // prevent blur before click
+      input.value = name;
+      updatePick(player, slot, name);
+      closeAllDropdowns();
+    });
+    dropdown.appendChild(item);
+  });
+
+  wrap.appendChild(dropdown);
+  activeDropdown = dropdown;
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', e => {
+  if (!e.target.closest('.autocomplete-wrap') && !e.target.closest('.roster-input-row')) {
+    closeAllDropdowns();
+  }
+});
 
 // ══════════════════════════════════════════
 // VISIBILITY — re-fetch instantly when tab regains focus
