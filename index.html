@@ -2465,7 +2465,7 @@ function renderHistory() {
 
 // Augusta National hole pars (could adjust per major later)
 const HOLE_PARS = {
-  masters2026:  [4,5,4,3,4,3,4,5,4, 4,4,3,5,4,5,3,4,4],
+  masters2026:  [4,5,4,3,4,3,4,5,4, 4,4,3,5,4,5,3,4,4], // confirmed Augusta National pars
   pga2026:      [4,4,3,4,4,3,5,4,4, 4,4,4,3,5,3,4,5,4], // Quail Hollow approx
   usopen2026:   [4,4,3,5,4,3,4,4,5, 4,4,3,4,4,5,3,4,4], // Shinnecock approx
   theopen2026:  [4,4,4,3,4,5,3,4,4, 4,3,4,4,3,5,4,4,5], // Royal Portrush approx
@@ -2701,28 +2701,49 @@ function renderPlayerScorecard(competitor, golferName) {
 // ══════════════════════════════════════════
 const HARDCODED_FIELDS = {
   masters2026: [
-    "Scottie Scheffler", "Rory McIlroy", "Bryson DeChambeau", "Collin Morikawa",
-    "Xander Schauffele", "Brooks Koepka", "Jon Rahm", "Dustin Johnson",
-    "Patrick Cantlay", "Viktor Hovland", "Ludvig Aberg", "Tommy Fleetwood",
-    "Shane Lowry", "Russell Henley", "Hideki Matsuyama", "Tony Finau",
-    "Cameron Smith", "Joaquin Niemann", "Min Woo Lee", "Tom Kim",
-    "Corey Conners", "Adam Scott", "Sepp Straka", "Sungjae Im",
-    "Cameron Young", "Jason Day", "Keegan Bradley", "Billy Horschel",
-    "Max Homa", "Tyrrell Hatton", "Sahith Theegala", "Harris English",
-    "Justin Thomas", "Jordan Spieth", "Will Zalatoris", "Denny McCarthy",
-    "Taylor Pendrith", "Chris Kirk", "Nick Dunlap", "Akshay Bhatia",
-    "Jake Knapp", "Davis Thompson", "Austin Eckroat", "J.T. Poston",
-    "Matthieu Pavon", "Nicolai Hojgaard", "Rasmus Hojgaard", "Robert MacIntyre",
-    "Justin Rose", "Bubba Watson", "Fred Couples", "Bernhard Langer",
-    "Jose Maria Olazabal", "Mike Weir", "Angel Cabrera", "Sandy Lyle",
-    "Larry Mize", "Mark O'Meara", "Ian Woosnam", "Vijay Singh",
-    "Phil Mickelson", "Tiger Woods", "Patrick Reed", "Rickie Fowler",
-    "Matt Fitzpatrick", "Si Woo Kim", "Abraham Ancer", "Emiliano Grillo",
-    "Erik van Rooyen", "Charl Schwartzel", "Marc Leishman", "Louis Oosthuizen",
-    "Thomas Pieters", "Alex Noren", "Victor Perez", "Aaron Rai",
-    "Brian Harman", "Luke List", "Sam Burns", "Scott Stallings",
-    "Scott Gutschewski", "Scott Piercy", "Neal Shipley", "Santiago de la Fuente"
-  ]
+    // Past Masters champions (playing)
+    "Scottie Scheffler", "Rory McIlroy", "Jon Rahm", "Hideki Matsuyama",
+    "Dustin Johnson", "Patrick Reed", "Sergio Garcia", "Charl Schwartzel",
+    "Adam Scott", "Bubba Watson", "Zach Johnson", "Fred Couples",
+    "Angel Cabrera", "Mike Weir", "Vijay Singh", "Jose Maria Olazabal",
+    "Jordan Spieth", "Danny Willett",
+    // Recent major winners
+    "Bryson DeChambeau", "Xander Schauffele", "Collin Morikawa",
+    "Brooks Koepka", "Justin Thomas", "Cameron Smith", "Matt Fitzpatrick",
+    "Wyndham Clark", "Brian Harman", "J.J. Spaun",
+    // 2025 Masters top finishers
+    "Ludvig Aberg", "Corey Conners", "Jason Day", "Harris English",
+    "Max Homa", "Sungjae Im", "Justin Rose",
+    // 2025 US Open top finishers
+    "Tyrrell Hatton", "Viktor Hovland", "Robert MacIntyre", "Carlos Ortiz", "Cameron Young",
+    // 2025 Open Championship top finishers
+    "Chris Gotterup", "Li Haotong",
+    // PGA Tour winners 2025-26
+    "Keegan Bradley", "Jacob Bridgeman", "Brian Campbell", "Nico Echavarria",
+    "Tommy Fleetwood", "Ryan Fox", "Kurt Kitayama", "Aldrich Potgieter", "Sepp Straka",
+    // 2025 Tour Championship qualifiers
+    "Akshay Bhatia", "Sam Burns", "Patrick Cantlay", "Ben Griffin",
+    "Harry Hall", "Russell Henley", "Shane Lowry", "Maverick McNealy",
+    "Andrew Novak", "Nick Taylor",
+    // National Open winners
+    "Marco Penge", "Naoyuki Kataoka", "Tom McKibbin",
+    "Rasmus Neergaard-Petersen", "Casey Jarvis",
+    // World Ranking qualifiers
+    "Min Woo Lee", "Tom Kim", "Si Woo Kim", "Nicolai Hojgaard",
+    "Sahith Theegala", "Jake Knapp", "Denny McCarthy", "Taylor Pendrith",
+    "Daniel Berger", "Matt McCarty", "Tony Finau", "Rickie Fowler",
+    "Joaquin Niemann", "Abraham Ancer", "Tommy Fleetwood",
+    "Patrick Cantlay", "Billy Horschel", "Will Zalatoris",
+    "Matthieu Pavon", "Thomas Pieters", "Victor Perez", "Aaron Rai",
+    "Alex Noren", "Emiliano Grillo", "Erik van Rooyen",
+    "Kristoffer Reitan", "Davis Thompson", "Austin Eckroat",
+    "Nick Dunlap", "Chris Kirk", "J.T. Poston", "Luke List",
+    // Amateurs
+    "Jackson Herrington", "Mason Howell", "Ethan Fang",
+    "Fifa Laopakdee", "Mateo Pulcini", "Brandon Holtz",
+    // Scott Gutschewski / Scott Piercy (Texas Open qualifiers area)
+    "Scott Gutschewski", "Scott Piercy"
+  ].filter((v, i, a) => a.indexOf(v) === i).sort() // dedupe and sort
 };
 
 // ══════════════════════════════════════════
