@@ -1859,7 +1859,7 @@
 const BIN_ID = '69d31dcc856a682189024e2a';
 const API_KEY = '$2a$10$bi8u/5Db8qyxEsv/QYyvuu03trS2sjASrsf0TXa.m3CIfARihdZdS';
 const ADMIN_PW = 'franktowngoats123!';
-const POLL_INTERVAL = 8000;  // 8s (JSONBin) — matches Toon Squad
+const POLL_INTERVAL = 15000; // 15s — reduced to avoid rate limits
 const ESPN_POLL = 10000;  // 10s (ESPN)
 
 const PLAYERS = ['Christian','Nick','Phil','Shaun','Ben','John','Josh','Sam'];
@@ -2034,8 +2034,8 @@ async function syncPush() {
     saveCache(state);           // keep cache in sync after push
     setSyncStatus('live');
     showToast('Saved ✓');
-    renderMain();
-    if (adminUnlocked) renderAdmin();
+    renderMain(true);
+    // Don't re-render admin panel — would wipe form inputs
   } catch(e) {
     setSyncStatus('error');
     showToast('Save failed — check connection');
