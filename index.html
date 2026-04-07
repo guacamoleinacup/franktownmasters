@@ -1650,6 +1650,127 @@
   }
 
 
+  /* ── PAYOUT CARD ── */
+  .payout-card {
+    background: var(--green-mid);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 28px;
+  }
+
+  .payout-pot-row {
+    display: flex;
+    gap: 0;
+    flex-wrap: wrap;
+  }
+
+  .payout-pot-item {
+    flex: 1;
+    min-width: 100px;
+    padding: 14px 18px;
+    border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+  .payout-pot-item:last-child { border-right: none; }
+
+  .payout-pot-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.58rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--gold-light);
+    opacity: 0.6;
+    margin-bottom: 4px;
+  }
+
+  .payout-pot-val {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--gold);
+  }
+
+  .payout-divider {
+    height: 1px;
+    background: var(--border);
+  }
+
+  .payout-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 18px;
+    border-bottom: 1px solid rgba(201,168,76,0.06);
+    font-size: 0.82rem;
+  }
+  .payout-row:last-child { border-bottom: none; }
+  .payout-winner { background: rgba(201,168,76,0.05); }
+
+  .payout-label {
+    font-weight: 700;
+    color: var(--cream);
+    min-width: 80px;
+  }
+
+  .payout-detail {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--gold-light);
+    opacity: 0.6;
+    flex: 1;
+  }
+
+  .payout-amount {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.82rem;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .payout-pos { color: #4caf50; }
+  .payout-neg { color: var(--red-light); }
+
+  .payout-empty {
+    padding: 20px 18px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    color: rgba(200,200,200,0.3);
+    letter-spacing: 0.04em;
+  }
+
+  /* ── STANDINGS TAB ── */
+  .standings-hero {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .year-tabs {
+    display: flex;
+    gap: 6px;
+  }
+
+  .year-tab {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    padding: 6px 14px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--gold-light);
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.06em;
+  }
+
+  .year-tab:hover { border-color: var(--gold); color: var(--gold); }
+  .year-tab.active { background: var(--gold); color: var(--green-deep); border-color: var(--gold); font-weight: 700; }
+
+
 </style>
 </head>
 <body>
@@ -2049,14 +2170,19 @@ function renderTabs() {
       <span class="tab-year">${m.year} · ${m.dates}</span>
     </button>
   `).join('');
+  const standingsBtn = `<button class="tab${activeView==='standings'?' active':''}" onclick="switchView('standings')">
+    Standings
+    <span class="tab-year">All-Time</span>
+  </button>`;
   const historyBtn = `<button class="tab${activeView==='history'?' active':''}" onclick="switchView('history')">
     History
     <span class="tab-year">Group Results</span>
   </button>`;
-  el.innerHTML = majorBtns + historyBtn;
+  el.innerHTML = majorBtns + standingsBtn + historyBtn;
 }
 
-let activeView = 'major'; // 'major' | 'history'
+let activeView = 'major'; // 'major' | 'standings' | 'history'
+let activeStandingsYear = 2026;
 
 function switchMajor(id) {
   activeMajorId = id;
@@ -2071,7 +2197,77 @@ function switchView(view) {
   activeView = view;
   renderTabs();
   if (view === 'history') renderHistory();
+  else if (view === 'standings') renderStandings();
   else renderMain();
+}
+
+
+// ══════════════════════════════════════════
+// PAYOUT SUMMARY (shown at bottom of major view)
+// ══════════════════════════════════════════
+function renderPayoutSummary(majorId) {
+  if (!state) return '';
+  const mData = state.majors[majorId];
+  const pot = calcPot(majorId);
+  const major = MAJORS.find(m => m.id === majorId);
+
+  // Penalties
+  const penaltyRows = PLAYERS.filter(p => (mData.potExtra[p] || 0) > 0).map(p => {
+    const count = mData.potExtra[p];
+    const cutGolfers = (mData.rosters[p]?.picks || []).filter(g => g && mData.statuses[g] === 'missed_cut');
+    return `<div class="payout-row">
+      <span class="payout-label">${p}</span>
+      <span class="payout-detail">${cutGolfers.join(', ')} missed cut</span>
+      <span class="payout-amount payout-neg">+$${count * 5}</span>
+    </div>`;
+  }).join('');
+
+  // Winners
+  const teamWinnerRow = mData.teamWinner ? `
+    <div class="payout-row payout-winner">
+      <span class="payout-label">🥇 ${mData.teamWinner}</span>
+      <span class="payout-detail">Low Team</span>
+      <span class="payout-amount payout-pos">+$${pot.half}</span>
+    </div>` : '';
+
+  const majorWinnerOwner = PLAYERS.find(p => mData.rosters[p]?.picks?.includes(mData.majorWinner));
+  const majorWinnerRow = mData.majorWinner ? `
+    <div class="payout-row payout-winner">
+      <span class="payout-label">🏆 ${majorWinnerOwner || '–'}</span>
+      <span class="payout-detail">Drafted ${mData.majorWinner}</span>
+      <span class="payout-amount payout-pos">+$${pot.half}</span>
+    </div>` : '';
+
+  return `
+    <div class="divider"></div>
+    <div class="section-header"><span class="section-title">Payouts</span></div>
+    <div class="payout-card">
+      <div class="payout-pot-row">
+        <div class="payout-pot-item">
+          <div class="payout-pot-label">Total Pot</div>
+          <div class="payout-pot-val">$${pot.total}</div>
+        </div>
+        <div class="payout-pot-item">
+          <div class="payout-pot-label">Low Team Prize</div>
+          <div class="payout-pot-val">$${pot.half}</div>
+        </div>
+        <div class="payout-pot-item">
+          <div class="payout-pot-label">Major Winner Prize</div>
+          <div class="payout-pot-val">$${pot.half}</div>
+        </div>
+        ${pot.extra ? `<div class="payout-pot-item">
+          <div class="payout-pot-label">Cut Penalties</div>
+          <div class="payout-pot-val payout-neg">+$${pot.extra}</div>
+        </div>` : ''}
+      </div>
+      ${penaltyRows || teamWinnerRow || majorWinnerRow ? `
+        <div class="payout-divider"></div>
+        ${penaltyRows}
+        ${teamWinnerRow}
+        ${majorWinnerRow}
+      ` : `<div class="payout-empty">Payouts will appear here as the tournament progresses</div>`}
+    </div>
+  `;
 }
 
 // ══════════════════════════════════════════
@@ -2239,10 +2435,8 @@ function renderMain(preserveScroll = false) {
 
   html += `</div>`;
 
-  // ── SEASON STANDINGS ──
-  html += `<div class="divider"></div>`;
-  html += `<div class="section-header"><span class="section-title">Season Standings</span></div>`;
-  html += renderOverallStandings();
+  // ── PAYOUT SUMMARY ──
+  html += renderPayoutSummary(activeMajorId);
 
   document.getElementById('mainContent').innerHTML = html;
   if (scrollY) window.scrollTo({ top: scrollY, behavior: 'instant' });
@@ -2787,8 +2981,10 @@ function renderPlayerScorecard(competitor, golferName) {
 
   let html = '';
 
-  if (rounds.length === 0) {
-    html = '<div class="scorecard-no-data">Tournament has not started yet or no holes played</div>';
+  if (!isTournamentLive(activeMajorId)) {
+    html = '<div class="scorecard-no-data">Tournament has not started yet — scores will appear here on April 10</div>';
+  } else if (rounds.length === 0) {
+    html = '<div class="scorecard-no-data">No holes played yet</div>';
   } else {
     rounds.forEach((holes, ri) => {
       const roundLabel = ['Round 1', 'Round 2', 'Round 3', 'Round 4'][ri];
@@ -3080,6 +3276,99 @@ document.addEventListener('touchstart', e => {
 document.addEventListener('click', e => {
   if (!e.target.closest('.autocomplete-wrap')) closeAllDropdowns();
 });
+
+
+// ══════════════════════════════════════════
+// STANDINGS TAB
+// ══════════════════════════════════════════
+const YEARS = [2026]; // add future years here
+
+function renderStandings() {
+  if (!state) return;
+  const el = document.getElementById('mainContent');
+
+  // Year selector
+  const yearTabs = YEARS.map(y => `
+    <button class="year-tab${y === activeStandingsYear ? ' active' : ''}" onclick="activeStandingsYear=${y};renderStandings()">
+      ${y}
+    </button>
+  `).join('');
+
+  // Filter majors for selected year
+  const yearMajors = MAJORS.filter(m => m.year === activeStandingsYear);
+
+  // Build totals
+  const totals = {};
+  PLAYERS.forEach(p => { totals[p] = { net: 0, majors: {}, paid: 0, won: 0 }; });
+
+  yearMajors.forEach(m => {
+    const mData = state.majors[m.id];
+    const pot = calcPot(m.id);
+    PLAYERS.forEach(p => {
+      const paid = 20 + (mData.potExtra[p] || 0) * 5;
+      let won = 0;
+      if (mData.teamWinner === p) won += pot.half;
+      const roster = mData.rosters[p];
+      if (mData.majorWinner && roster?.picks?.includes(mData.majorWinner)) won += pot.half;
+      const net = won - paid;
+      totals[p].net += net;
+      totals[p].paid += paid;
+      totals[p].won += won;
+      totals[p].majors[m.id] = { net, paid, won };
+    });
+  });
+
+  const sorted = PLAYERS.slice().sort((a, b) => totals[b].net - totals[a].net);
+
+  let html = `
+    <div class="standings-hero">
+      <div>
+        <div style="font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:700;color:var(--gold)">Season Standings</div>
+        <div style="font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--gold-light);opacity:0.7;margin-top:4px;letter-spacing:0.08em">Franktown Golf Majors · All-Time</div>
+      </div>
+      <div class="year-tabs">${yearTabs}</div>
+    </div>
+
+    <div class="standings-card" style="margin-bottom:28px">
+      <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+      <table class="overall-table">
+        <thead>
+          <tr>
+            <th style="text-align:left;padding-left:16px">Player</th>
+            ${yearMajors.map(m => `<th class="major-col-header">${m.name.replace('The ','').replace(' Championship','')}<br><span style="opacity:0.5;font-size:0.5rem">${m.dates}</span></th>`).join('')}
+            <th>Paid In</th>
+            <th>Won</th>
+            <th style="color:var(--gold)">Net</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${sorted.map((p, i) => {
+            const t = totals[p];
+            const isLeader = i === 0 && t.net !== 0;
+            return `<tr${isLeader ? ' style="background:rgba(201,168,76,0.06)"' : ''}>
+              <td style="text-align:left;padding-left:16px;font-weight:700">
+                ${isLeader ? '🥇 ' : ''}${p}
+              </td>
+              ${yearMajors.map(m => {
+                const v = t.majors[m.id];
+                if (!v) return '<td style="color:rgba(200,200,200,0.2)">–</td>';
+                const cls = v.net > 0 ? 'amount-positive' : v.net < 0 ? 'amount-negative' : '';
+                return `<td class="${cls}">${v.net > 0 ? '+' : ''}$${v.net}</td>`;
+              }).join('')}
+              <td style="color:rgba(200,200,200,0.5)">$${t.paid}</td>
+              <td class="${t.won > 0 ? 'amount-positive' : ''}">${t.won > 0 ? '+' : ''}$${t.won}</td>
+              <td class="${t.net > 0 ? 'amount-positive' : t.net < 0 ? 'amount-negative' : ''}" style="font-weight:700;font-size:0.9rem">${t.net > 0 ? '+' : ''}$${t.net}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+      </div>
+    </div>
+  `;
+
+  el.innerHTML = html;
+  window.scrollTo({ top: 0, behavior: 'instant' });
+}
 
 // ══════════════════════════════════════════
 // VISIBILITY — re-fetch instantly when tab regains focus
