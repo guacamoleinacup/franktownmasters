@@ -1883,9 +1883,6 @@ let espnTimer = null;
 let syncFailCount = 0; // only show red after 2 consecutive failures
 
 function isTournamentLive(majorId) {
-  const major = MAJORS.find(m => m.id === majorId);
-  if (!major) return false;
-  // Parse start date from dates string e.g. "Apr 10–13"
   const now = new Date();
   const startDates = {
     masters2026: new Date('2026-04-10T07:00:00'),
@@ -1900,6 +1897,24 @@ function isTournamentLive(majorId) {
     theopen2026: new Date('2026-07-19T23:59:00'),
   };
   return now >= (startDates[majorId] || Infinity) && now <= (endDates[majorId] || 0);
+}
+
+function isTournamentWeek(majorId) {
+  // Tee times are valid from the Monday of tournament week (3 days before R1)
+  const now = new Date();
+  const teeTimes = {
+    masters2026: new Date('2026-04-07T00:00:00'), // Mon before Masters
+    pga2026:     new Date('2026-05-18T00:00:00'),
+    usopen2026:  new Date('2026-06-15T00:00:00'),
+    theopen2026: new Date('2026-07-13T00:00:00'),
+  };
+  const endDates = {
+    masters2026: new Date('2026-04-13T23:59:00'),
+    pga2026:     new Date('2026-05-24T23:59:00'),
+    usopen2026:  new Date('2026-06-21T23:59:00'),
+    theopen2026: new Date('2026-07-19T23:59:00'),
+  };
+  return now >= (teeTimes[majorId] || Infinity) && now <= (endDates[majorId] || 0);
 }
 
 // ══════════════════════════════════════════
@@ -2430,7 +2445,7 @@ function renderMain(preserveScroll = false) {
                 <div class="gc-name-row">
                   <div>
                     <span class="gc-name">${g}</span>
-                    ${teeTimeStr && !live ? `<div class="gc-tee-time">⏰ ${teeTimeStr}</div>` : ''}
+                    ${teeTimeStr && !live && isTournamentWeek(activeMajorId) ? `<div class="gc-tee-time">⏰ ${teeTimeStr}</div>` : ''}
                   </div>
                   ${statusTag}
                 </div>
@@ -2937,7 +2952,7 @@ async function openPlayerModal(golferName) {
     ${owner ? `<span class="player-card-owner-badge">Drafted by ${owner}</span>` : ''}
     ${espnG?.pos ? `<span class="player-modal-stat">Position: <strong>${espnG.pos}</strong></span>` : ''}
     ${espnG?.thru ? `<span class="player-modal-stat">Thru: <strong>${espnG.thru}</strong></span>` : ''}
-    ${teeTime ? `<span class="player-modal-stat">⏰ Tee Time: <strong>${teeTime}</strong></span>` : ''}
+    ${teeTime && isTournamentWeek(activeMajorId) ? `<span class="player-modal-stat">⏰ Tee Time: <strong>${teeTime}</strong></span>` : ''}
   `;
   pmBody.innerHTML = '<div class="player-card-loading"><span class="loading-spinner"></span> Loading scorecard…</div>';
   modal.style.display = 'flex';
