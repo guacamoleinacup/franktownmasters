@@ -2147,11 +2147,35 @@ function getGolferScore(majorId, golferName) {
   const data = espnData[majorId];
   if (!data) return null;
   const key = golferName.toLowerCase().trim();
-  // Try exact, then partial match
+
+  // 1. Exact match
   if (data[key]) return data[key];
+
+  // 2. Normalize both sides: remove accents, dots, apostrophes
+  const norm = s => s.toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // remove accents (Højgaard -> hojgaard)
+    .replace(/[.'\u2019]/g, '')  // remove dots/apostrophes (J.T. -> jt)
+    .replace(/\s+/g, ' ').trim();
+
+  const normKey = norm(golferName);
   for (const k of Object.keys(data)) {
-    if (k.includes(key) || key.includes(k.split(' ').pop())) return data[k];
+    if (norm(k) === normKey) return data[k];
   }
+
+  // 3. Last name exact match (only if unambiguous)
+  const lastName = normKey.split(' ').pop();
+  if (lastName.length > 3) {
+    const lastMatches = Object.keys(data).filter(k => norm(k).split(' ').pop() === lastName);
+    if (lastMatches.length === 1) return data[lastMatches[0]];
+  }
+
+  // 4. First + last name token match
+  const keyTokens = normKey.split(' ');
+  for (const k of Object.keys(data)) {
+    const kTokens = norm(k).split(' ');
+    if (keyTokens.every(t => kTokens.some(kt => kt.startsWith(t) || t.startsWith(kt)))) return data[k];
+  }
+
   return null;
 }
 
@@ -3173,52 +3197,7 @@ function renderPlayerScorecard(competitor, golferName) {
 // ══════════════════════════════════════════
 // HARDCODED FIELDS (fallback when ESPN not populated)
 // ══════════════════════════════════════════
-const HARDCODED_FIELDS = {
-  masters2026: [
-    // Past Masters champions (playing)
-    "Scottie Scheffler", "Rory McIlroy", "Jon Rahm", "Hideki Matsuyama",
-    "Dustin Johnson", "Patrick Reed", "Sergio Garcia", "Charl Schwartzel",
-    "Adam Scott", "Bubba Watson", "Zach Johnson", "Fred Couples",
-    "Angel Cabrera", "Mike Weir", "Vijay Singh", "Jose Maria Olazabal",
-    "Jordan Spieth", "Danny Willett",
-    // Recent major winners
-    "Bryson DeChambeau", "Xander Schauffele", "Collin Morikawa",
-    "Brooks Koepka", "Justin Thomas", "Cameron Smith", "Matt Fitzpatrick",
-    "Wyndham Clark", "Brian Harman", "J.J. Spaun",
-    // 2025 Masters top finishers
-    "Ludvig Aberg", "Corey Conners", "Jason Day", "Harris English",
-    "Max Homa", "Sungjae Im", "Justin Rose",
-    // 2025 US Open top finishers
-    "Tyrrell Hatton", "Viktor Hovland", "Robert MacIntyre", "Carlos Ortiz", "Cameron Young",
-    // 2025 Open Championship top finishers
-    "Chris Gotterup", "Li Haotong",
-    // PGA Tour winners 2025-26
-    "Keegan Bradley", "Jacob Bridgeman", "Brian Campbell", "Nico Echavarria",
-    "Tommy Fleetwood", "Ryan Fox", "Kurt Kitayama", "Aldrich Potgieter", "Sepp Straka",
-    // 2025 Tour Championship qualifiers
-    "Akshay Bhatia", "Sam Burns", "Patrick Cantlay", "Ben Griffin",
-    "Harry Hall", "Russell Henley", "Shane Lowry", "Maverick McNealy",
-    "Andrew Novak", "Nick Taylor",
-    // National Open winners
-    "Marco Penge", "Naoyuki Kataoka", "Tom McKibbin",
-    "Rasmus Neergaard-Petersen", "Casey Jarvis",
-    // World Ranking qualifiers
-    "Min Woo Lee", "Tom Kim", "Si Woo Kim", "Nicolai Hojgaard",
-    "Sahith Theegala", "Jake Knapp", "Denny McCarthy", "Taylor Pendrith",
-    "Daniel Berger", "Matt McCarty", "Tony Finau", "Rickie Fowler",
-    "Joaquin Niemann", "Abraham Ancer", "Tommy Fleetwood",
-    "Patrick Cantlay", "Billy Horschel", "Will Zalatoris",
-    "Matthieu Pavon", "Thomas Pieters", "Victor Perez", "Aaron Rai",
-    "Alex Noren", "Emiliano Grillo", "Erik van Rooyen",
-    "Kristoffer Reitan", "Davis Thompson", "Austin Eckroat",
-    "Nick Dunlap", "Chris Kirk", "J.T. Poston", "Luke List",
-    // Amateurs
-    "Jackson Herrington", "Mason Howell", "Ethan Fang",
-    "Fifa Laopakdee", "Mateo Pulcini", "Brandon Holtz",
-    // Scott Gutschewski / Scott Piercy (Texas Open qualifiers area)
-    "Scott Gutschewski", "Scott Piercy"
-  ].filter((v, i, a) => a.indexOf(v) === i).sort() // dedupe and sort
-};
+// No hardcoded field — ESPN is the single source of truth for player names, tee times, and scores
 
 // ══════════════════════════════════════════
 // GOLFER AUTOCOMPLETE
@@ -3227,104 +3206,50 @@ let fieldCache = {}; // majorId -> [golfer names]
 let activeDropdown = null;
 
 async function fetchField(majorId) {
-  if (fieldCache[majorId]) return fieldCache[majorId];
-  const hardcoded = HARDCODED_FIELDS[majorId] || [];
+  if (fieldCache[majorId]?.length > 0) return fieldCache[majorId];
   const major = MAJORS.find(m => m.id === majorId);
-  // Pre-populate cache immediately with hardcoded so it's available synchronously
-  fieldCache[majorId] = [...hardcoded].sort();
-  // Then try to enrich with ESPN in background
-  if (major?.espnId) {
-    try {
-      const url = `https://site.api.espn.com/apis/site/v2/sports/golf/leaderboard?event=${major.espnId}`;
-      const r = await fetch(url);
-      const j = await r.json();
-      const competitors = j?.events?.[0]?.competitions?.[0]?.competitors || [];
-      const espnNames = competitors.map(c => c.athlete?.displayName || '').filter(Boolean);
-      if (espnNames.length >= 20) {
-        fieldCache[majorId] = [...new Set([...espnNames, ...hardcoded])].sort();
-      }
-    } catch(e) { /* keep hardcoded */ }
+  if (!major?.espnId) return [];
+  try {
+    const url = `https://site.api.espn.com/apis/site/v2/sports/golf/leaderboard?event=${major.espnId}`;
+    const r = await fetch(url);
+    const j = await r.json();
+    const competitors = j?.events?.[0]?.competitions?.[0]?.competitors || [];
+    const names = competitors.map(c => c.athlete?.displayName || '').filter(Boolean).sort();
+    if (names.length > 0) fieldCache[majorId] = names;
+    return fieldCache[majorId] || [];
+  } catch(e) {
+    console.warn('fetchField failed:', e);
+    return [];
   }
-  return fieldCache[majorId];
 }
 
-function closeAllDropdowns() {
-  document.querySelectorAll('.autocomplete-dropdown').forEach(d => d.remove());
-  activeDropdown = null;
-}
-
-function highlightMatch(name, query) {
-  if (!query) return name;
-  let result = name;
-  const words = query.trim().split(' ').filter(Boolean);
-  words.forEach(word => {
-    const re = new RegExp('(' + word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
-    result = result.replace(re, '<em>$1</em>');
-  });
-  return result;
-}
-
-function showDropdown(input, player, slot) {
-  const query = input.value.trim();
-  closeAllDropdowns();
-  updatePick(player, slot, query);
-
-  const names = fieldCache[activeMajorId] || HARDCODED_FIELDS[activeMajorId] || [];
-  if (query.length < 1 || names.length === 0) return;
-
-  const q = query.toLowerCase();
-  const words = q.split(' ').filter(Boolean);
-  const score = name => {
-    const n = name.toLowerCase();
-    const parts = n.split(' ');
-    if (n.startsWith(q)) return 0;
-    if (parts.some(p => p.startsWith(q))) return 1;
-    if (words.every(w => n.includes(w))) return 2;
-    if (n.includes(q)) return 3;
-    return 99;
-  };
-  const matches = names
-    .map(n => ({ n, s: score(n) }))
-    .filter(x => x.s < 99)
-    .sort((a, b) => a.s - b.s || a.n.localeCompare(b.n))
-    .slice(0, 8)
-    .map(x => x.n);
-
-  if (matches.length === 0) return;
-
-  const wrap = input.closest('.autocomplete-wrap');
-  if (!wrap) return;
-
-  const dropdown = document.createElement('div');
-  dropdown.className = 'autocomplete-dropdown';
-  matches.forEach(name => {
-    const item = document.createElement('div');
-    item.className = 'autocomplete-item';
-    item.innerHTML = highlightMatch(name, query);
-    // Use touchstart + mousedown for both mobile and desktop
-    const select = e => {
-      e.preventDefault();
-      e.stopPropagation();
-      input.value = name;
-      updatePick(player, slot, name);
-      closeAllDropdowns();
-    };
-    item.addEventListener('mousedown', select);
-    item.addEventListener('touchstart', select, { passive: false });
-    dropdown.appendChild(item);
-  });
-
-  wrap.appendChild(dropdown);
-  activeDropdown = dropdown;
-}
 
 async function handleRosterInput(input, player, slot) {
-  // Ensure field is cached (sync part uses hardcoded immediately)
-  if (!fieldCache[activeMajorId]) {
-    fieldCache[activeMajorId] = [...(HARDCODED_FIELDS[activeMajorId] || [])].sort();
-    fetchField(activeMajorId); // enrich in background, don't await
+  updatePick(player, slot, input.value.trim());
+
+  if (input.value.trim().length < 1) { closeAllDropdowns(); return; }
+
+  // If we already have the field cached, show immediately
+  if (fieldCache[activeMajorId]?.length > 0) {
+    showDropdown(input, player, slot);
+    return;
   }
-  showDropdown(input, player, slot);
+
+  // Show loading state while fetching from ESPN
+  closeAllDropdowns();
+  const wrap = input.closest('.autocomplete-wrap');
+  if (!wrap) return;
+  const loadingEl = document.createElement('div');
+  loadingEl.className = 'autocomplete-dropdown';
+  loadingEl.innerHTML = '<div class="autocomplete-loading"><span class="loading-spinner"></span> Loading field from ESPN…</div>';
+  wrap.appendChild(loadingEl);
+
+  await fetchField(activeMajorId);
+  loadingEl.remove();
+
+  if (document.body.contains(input) && input.value.trim().length > 0) {
+    showDropdown(input, player, slot);
+  }
 }
 
 // Close on outside tap/click — longer delay for mobile
