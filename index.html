@@ -3249,18 +3249,85 @@ async function fetchField(majorId) {
 }
 
 
+function closeAllDropdowns() {
+  document.querySelectorAll('.autocomplete-dropdown').forEach(d => d.remove());
+  activeDropdown = null;
+}
+
+function highlightMatch(name, query) {
+  if (!query) return name;
+  let result = name;
+  const words = query.trim().split(' ').filter(Boolean);
+  words.forEach(word => {
+    const re = new RegExp('(' + word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+    result = result.replace(re, '<em>$1</em>');
+  });
+  return result;
+}
+
+function showDropdown(input, player, slot) {
+  const query = input.value.trim();
+  closeAllDropdowns();
+  updatePick(player, slot, query);
+
+  const names = fieldCache[activeMajorId] || [];
+  if (query.length < 1 || names.length === 0) return;
+
+  const q = query.toLowerCase();
+  const words = q.split(' ').filter(Boolean);
+  const scoreMatch = name => {
+    const n = name.toLowerCase();
+    const parts = n.split(' ');
+    if (n.startsWith(q)) return 0;
+    if (parts.some(p => p.startsWith(q))) return 1;
+    if (words.every(w => n.includes(w))) return 2;
+    if (n.includes(q)) return 3;
+    return 99;
+  };
+  const matches = names
+    .map(n => ({ n, s: scoreMatch(n) }))
+    .filter(x => x.s < 99)
+    .sort((a, b) => a.s - b.s || a.n.localeCompare(b.n))
+    .slice(0, 8)
+    .map(x => x.n);
+
+  if (matches.length === 0) return;
+
+  const wrap = input.closest('.autocomplete-wrap');
+  if (!wrap) return;
+
+  const dropdown = document.createElement('div');
+  dropdown.className = 'autocomplete-dropdown';
+  matches.forEach(name => {
+    const item = document.createElement('div');
+    item.className = 'autocomplete-item';
+    item.innerHTML = highlightMatch(name, query);
+    const select = e => {
+      e.preventDefault();
+      e.stopPropagation();
+      input.value = name;
+      updatePick(player, slot, name);
+      closeAllDropdowns();
+    };
+    item.addEventListener('mousedown', select);
+    item.addEventListener('touchstart', select, { passive: false });
+    dropdown.appendChild(item);
+  });
+
+  wrap.appendChild(dropdown);
+  activeDropdown = dropdown;
+}
+
 async function handleRosterInput(input, player, slot) {
   updatePick(player, slot, input.value.trim());
-
   if (input.value.trim().length < 1) { closeAllDropdowns(); return; }
 
-  // If we already have the field cached, show immediately
   if (fieldCache[activeMajorId]?.length > 0) {
     showDropdown(input, player, slot);
     return;
   }
 
-  // Show loading state while fetching from ESPN
+  // Fetch from ESPN then show
   closeAllDropdowns();
   const wrap = input.closest('.autocomplete-wrap');
   if (!wrap) return;
