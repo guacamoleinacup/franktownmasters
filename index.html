@@ -1865,7 +1865,7 @@ const ESPN_POLL = 10000;  // 10s (ESPN)
 const PLAYERS = ['Christian','Nick','Phil','Shaun','Ben','John','Josh','Sam'];
 
 const MAJORS = [
-  { id: 'masters2026',      name: 'The Masters',         year: 2026, dates: 'Apr 10–13', course: 'Augusta National',       espnId: '401703510' },
+  { id: 'masters2026',      name: 'The Masters',         year: 2026, dates: 'Apr 9–12',  course: 'Augusta National',       espnId: '401811941' },
   { id: 'pga2026',          name: 'PGA Championship',    year: 2026, dates: 'May 21–24', course: 'Quail Hollow Club',       espnId: null },
   { id: 'usopen2026',       name: 'U.S. Open',           year: 2026, dates: 'Jun 18–21', course: 'Shinnecock Hills',        espnId: null },
   { id: 'theopen2026',      name: 'The Open Championship', year: 2026, dates: 'Jul 16–19', course: 'Royal Portrush',        espnId: null },
@@ -1885,7 +1885,7 @@ let syncFailCount = 0; // only show red after 2 consecutive failures
 function isTournamentLive(majorId) {
   const now = new Date();
   const startDates = {
-    masters2026: new Date('2026-04-10T07:00:00'),
+    masters2026: new Date('2026-04-09T07:00:00'),
     pga2026:     new Date('2026-05-21T07:00:00'),
     usopen2026:  new Date('2026-06-18T07:00:00'),
     theopen2026: new Date('2026-07-16T07:00:00'),
@@ -2356,7 +2356,7 @@ function renderMain(preserveScroll = false) {
 
   // Status badge
   const now = new Date();
-  const startDates = { masters2026: new Date('2026-04-10'), pga2026: new Date('2026-05-21'), usopen2026: new Date('2026-06-18'), theopen2026: new Date('2026-07-16') };
+  const startDates = { masters2026: new Date('2026-04-09'), pga2026: new Date('2026-05-21'), usopen2026: new Date('2026-06-18'), theopen2026: new Date('2026-07-16') };
   const endDates   = { masters2026: new Date('2026-04-13T23:59:00'), pga2026: new Date('2026-05-24T23:59:00'), usopen2026: new Date('2026-06-21T23:59:00'), theopen2026: new Date('2026-07-19T23:59:00') };
   let statusBadge = '';
   if (now < (startDates[activeMajorId] || Infinity)) statusBadge = `<span class="round-badge round-upcoming">Upcoming · ${major.dates}</span>`;
@@ -2608,6 +2608,17 @@ function renderAdmin() {
   });
 
   let html = `
+    <!-- ESPN Debug -->
+    <div class="admin-section">
+      <h3>ESPN Data Debug</h3>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+        <button class="btn btn-outline btn-sm" onclick="debugESPN()">Dump ESPN Data</button>
+        <button class="btn btn-outline btn-sm" onclick="debugField()">Dump Field Cache</button>
+        <button class="btn btn-outline btn-sm" onclick="clearESPNCache()">Clear Cache & Refetch</button>
+      </div>
+      <div id="espnDebugOut" style="font-family:'DM Mono',monospace;font-size:0.62rem;color:var(--gold-light);background:rgba(0,0,0,0.3);padding:10px;border-radius:4px;max-height:200px;overflow-y:auto;white-space:pre-wrap;display:none"></div>
+    </div>
+
     <!-- Major Selector -->
     <div class="admin-section">
       <h3>Editing Major</h3>
@@ -3062,7 +3073,7 @@ function renderPlayerScorecard(competitor, golferName) {
   let html = '';
 
   if (!isTournamentLive(activeMajorId)) {
-    html = '<div class="scorecard-no-data">Tournament has not started yet — scores will appear here on April 10</div>';
+    html = '<div class="scorecard-no-data">Tournament has not started yet — scores will appear here on April 9</div>';
   } else if (rounds.length === 0) {
     html = '<div class="scorecard-no-data">No holes played yet</div>';
   } else {
@@ -3351,6 +3362,48 @@ function renderStandings() {
 
   el.innerHTML = html;
   window.scrollTo({ top: 0, behavior: 'instant' });
+}
+
+
+// ══════════════════════════════════════════
+// ESPN DEBUG HELPERS
+// ══════════════════════════════════════════
+function debugESPN() {
+  const el = document.getElementById('espnDebugOut');
+  if (!el) return;
+  const data = espnData[activeMajorId];
+  if (!data || Object.keys(data).length === 0) {
+    el.textContent = 'No ESPN data loaded yet. Try clicking Refresh first.';
+  } else {
+    const lines = Object.entries(data).map(([k, v]) =>
+      `${k.padEnd(30)} | score:${String(v.score).padEnd(5)} | thru:${String(v.thru).padEnd(8)} | teeTime:${v.teeTime || 'none'}`
+    );
+    el.textContent = `${lines.length} players loaded:\n\n` + lines.join('\n');
+  }
+  el.style.display = 'block';
+}
+
+function debugField() {
+  const el = document.getElementById('espnDebugOut');
+  if (!el) return;
+  const field = fieldCache[activeMajorId];
+  if (!field?.length) {
+    el.textContent = 'Field cache empty. Open autocomplete or click Refresh.';
+  } else {
+    el.textContent = `${field.length} players in field cache:\n\n` + field.join('\n');
+  }
+  el.style.display = 'block';
+}
+
+function clearESPNCache() {
+  delete fieldCache[activeMajorId];
+  delete espnData[activeMajorId];
+  lastESPNFetch = 0;
+  fetchESPN(activeMajorId).catch(() => {});
+  fetchField(activeMajorId).then(() => {
+    const el = document.getElementById('espnDebugOut');
+    if (el) { el.textContent = 'Cache cleared and refetched. Click Dump ESPN Data to see results.'; el.style.display = 'block'; }
+  });
 }
 
 // ══════════════════════════════════════════
