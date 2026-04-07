@@ -1771,6 +1771,16 @@
   .year-tab.active { background: var(--gold); color: var(--green-deep); border-color: var(--gold); font-weight: 700; }
 
 
+  .gc-tee-time {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.55rem;
+    color: var(--gold-light);
+    opacity: 0.6;
+    margin-top: 2px;
+    letter-spacing: 0.04em;
+  }
+
+
 </style>
 </head>
 <body>
@@ -2083,7 +2093,17 @@ async function fetchESPN(majorId) {
         ? (todayVal === 0 ? 'E' : (todayVal > 0 ? `+${todayVal}` : `${todayVal}`))
         : '';
 
-      scores[name.toLowerCase()] = { score: scoreDisp, toPar, pos, thru, todayDisp, cut, raw: c };
+      // Tee time — ESPN stores as ISO string in status.teeTime or teeTime
+      const teeTimeRaw = c.status?.teeTime || c.teeTime || null;
+      let teeTimeDisp = '';
+      if (teeTimeRaw) {
+        try {
+          const dt = new Date(teeTimeRaw);
+          teeTimeDisp = dt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZoneName: 'short', hour12: true });
+        } catch(e) {}
+      }
+
+      scores[name.toLowerCase()] = { score: scoreDisp, toPar, pos, thru, todayDisp, cut, teeTime: teeTimeDisp, raw: c };
     });
     espnData[majorId] = scores;
     if (majorId === activeMajorId) {
@@ -2404,10 +2424,14 @@ function renderMain(preserveScroll = false) {
               return `<span class="gc-round ${cls}">${rounds[r] > 0 ? '+' : ''}${rounds[r]}</span>`;
             }).join('') : '<span class="gc-round gc-round-empty" style="grid-column:span 4">–</span>';
 
+            const teeTimeStr = espnG?.teeTime || '';
             return `
               <div class="golfer-card${isCut ? ' gc-cut' : isWD ? ' gc-wd' : ''}" onclick="openPlayerModal('${g.replace(/'/g, "\'")}')">
                 <div class="gc-name-row">
-                  <span class="gc-name">${g}</span>
+                  <div>
+                    <span class="gc-name">${g}</span>
+                    ${teeTimeStr && !live ? `<div class="gc-tee-time">⏰ ${teeTimeStr}</div>` : ''}
+                  </div>
                   ${statusTag}
                 </div>
                 <div class="gc-scores">
@@ -2899,16 +2923,21 @@ async function openPlayerModal(golferName) {
     mData.rosters[p]?.alternate === golferName
   ) : null;
 
-  const espnG = getGolferScore(activeMajorId, golferName);
+  const espnG = isTournamentLive(activeMajorId) ? getGolferScore(activeMajorId, golferName) : null;
   const score = espnG?.score || '–';
   const scoreCls = score.startsWith('-') ? 'score-under' : score.startsWith('+') ? 'score-over' : score === 'E' ? 'score-even' : '';
 
   pmName.textContent = golferName;
-  pmScoreBig.innerHTML = `<span class="${scoreCls}">${score}</span>`;
+  pmScoreBig.innerHTML = espnG ? `<span class="${scoreCls}">${score}</span>` : '';
+  // For tee time, fetch from raw ESPN even if not live yet (tee times appear before play)
+  const espnGRaw = getGolferScore(activeMajorId, golferName);
+  const teeTime = espnGRaw?.teeTime || null;
+
   pmMeta.innerHTML = `
     ${owner ? `<span class="player-card-owner-badge">Drafted by ${owner}</span>` : ''}
     ${espnG?.pos ? `<span class="player-modal-stat">Position: <strong>${espnG.pos}</strong></span>` : ''}
     ${espnG?.thru ? `<span class="player-modal-stat">Thru: <strong>${espnG.thru}</strong></span>` : ''}
+    ${teeTime ? `<span class="player-modal-stat">⏰ Tee Time: <strong>${teeTime}</strong></span>` : ''}
   `;
   pmBody.innerHTML = '<div class="player-card-loading"><span class="loading-spinner"></span> Loading scorecard…</div>';
   modal.style.display = 'flex';
@@ -3096,16 +3125,18 @@ function renderPlayerScorecard(competitor, golferName) {
     `;
   }
 
-  // Legend
-  html += `
-    <div style="margin-top:20px;display:flex;gap:14px;flex-wrap:wrap;font-family:'DM Mono',monospace;font-size:0.6rem;opacity:0.6">
-      <span class="score-eagle">■ Eagle or better</span>
-      <span class="score-birdie">■ Birdie</span>
-      <span class="score-par">■ Par</span>
-      <span class="score-bogey">■ Bogey</span>
-      <span class="score-double">■ Double+</span>
-    </div>
-  `;
+  // Legend — only show when live
+  if (isTournamentLive(activeMajorId)) {
+    html += `
+      <div style="margin-top:20px;display:flex;gap:14px;flex-wrap:wrap;font-family:'DM Mono',monospace;font-size:0.6rem;opacity:0.6">
+        <span class="score-eagle">■ Eagle or better</span>
+        <span class="score-birdie">■ Birdie</span>
+        <span class="score-par">■ Par</span>
+        <span class="score-bogey">■ Bogey</span>
+        <span class="score-double">■ Double+</span>
+      </div>
+    `;
+  }
 
   document.getElementById('pmBody').innerHTML = html;
 }
