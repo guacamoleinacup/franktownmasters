@@ -1859,8 +1859,8 @@
 const BIN_ID = '69d31dcc856a682189024e2a';
 const API_KEY = '$2a$10$bi8u/5Db8qyxEsv/QYyvuu03trS2sjASrsf0TXa.m3CIfARihdZdS';
 const ADMIN_PW = 'franktowngoats123!';
-const POLL_INTERVAL = 15000; // 15s — reduced to avoid rate limits
-const ESPN_POLL = 10000;  // 10s (ESPN)
+const POLL_INTERVAL = 60000; // 60s JSONBin — conserve requests (shared API key)
+const ESPN_POLL = 10000;   // 10s ESPN — fast during live rounds
 
 const PLAYERS = ['Christian','Nick','Phil','Shaun','Ben','John','Josh','Sam'];
 
@@ -1916,6 +1916,25 @@ function isTournamentWeek(majorId) {
   };
   return now >= (teeTimes[majorId] || Infinity) && now <= (endDates[majorId] || 0);
 }
+
+// ══════════════════════════════════════════
+// CROSS-TAB SYNC — instant sync without JSONBin requests
+// ══════════════════════════════════════════
+// When admin saves, we broadcast to all open tabs via localStorage event
+// This gives instant sync for anyone with the site open on the same device
+window.addEventListener('storage', e => {
+  if (e.key === CACHE_KEY && e.newValue) {
+    try {
+      const fresh = JSON.parse(e.newValue);
+      const h = JSON.stringify(fresh);
+      if (h !== lastHash) {
+        lastHash = h;
+        state = migrateState(fresh);
+        renderMain(true);
+      }
+    } catch(err) {}
+  }
+});
 
 // ══════════════════════════════════════════
 // LOCAL CACHE — render instantly on load
@@ -2035,7 +2054,9 @@ async function syncPush() {
     setSyncStatus('live');
     showToast('Saved ✓');
     renderMain(true);
-    // Don't re-render admin panel — would wipe form inputs
+    // Reset poll timer so we don't poll immediately after a push (wastes a request)
+    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+    pollTimer = setInterval(syncPull, POLL_INTERVAL);
   } catch(e) {
     setSyncStatus('error');
     showToast('Save failed — check connection');
@@ -2586,6 +2607,9 @@ function renderOverallStandings() {
 // ══════════════════════════════════════════
 function openAdmin() {
   document.getElementById('adminModal').style.display = 'flex';
+  // Pause background polling while admin is open to avoid rate limits
+  if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+  if (espnTimer) { clearInterval(espnTimer); espnTimer = null; }
   if (!adminUnlocked) {
     document.getElementById('pwGate').style.display = 'flex';
     setTimeout(() => document.getElementById('pwInput')?.focus(), 100);
@@ -2596,6 +2620,9 @@ function openAdmin() {
 
 function closeAdmin() {
   document.getElementById('adminModal').style.display = 'none';
+  // Resume polling when admin is closed
+  startPolling();
+  syncPull(); // do one immediate pull to catch any changes
 }
 
 function checkPw() {
