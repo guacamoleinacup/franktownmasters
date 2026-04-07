@@ -1602,11 +1602,11 @@ async function syncPull() {
       syncFailCount = 0;
       setSyncStatus('live');
       fetchESPN(activeMajorId).catch(() => {}); // non-blocking, don't let ESPN failure affect sync status
-      renderMain();
+      renderMain(true); // preserve scroll on background sync
     } else {
       syncFailCount = 0;
       setSyncStatus('live');
-      if (document.getElementById('loadingState')) renderMain();
+      if (document.getElementById('loadingState')) renderMain(); else renderMain(true);
     }
   } catch(e) {
     syncFailCount++;
@@ -1627,7 +1627,7 @@ async function syncPull() {
       }
     }
     // Always render from cache if available, silently
-    if (state) renderMain();
+    if (state) renderMain(true);
   }
 }
 
@@ -1725,7 +1725,7 @@ async function fetchESPN(majorId) {
     espnData[majorId] = scores;
     if (majorId === activeMajorId) {
       setESPNStatus('live');
-      renderMain();
+      renderMain(true); // preserve scroll on ESPN update
     }
   } catch(e) {
     setESPNStatus('error');
@@ -1835,10 +1835,10 @@ function switchView(view) {
 // ══════════════════════════════════════════
 // RENDER MAIN
 // ══════════════════════════════════════════
-function renderMain() {
+function renderMain(preserveScroll = false) {
   if (!state) return;
   if (activeView === 'history') { renderHistory(); return; }
-  window.scrollTo({ top: 0, behavior: 'instant' });
+  const scrollY = preserveScroll ? window.scrollY : 0;
   const major = MAJORS.find(m => m.id === activeMajorId);
   const mData = state.majors[activeMajorId];
   const pot = calcPot(activeMajorId);
@@ -2026,6 +2026,7 @@ function renderMain() {
   html += renderOverallStandings();
 
   document.getElementById('mainContent').innerHTML = html;
+  if (scrollY) window.scrollTo({ top: scrollY, behavior: 'instant' });
 }
 
 function renderOverallStandings() {
