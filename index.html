@@ -1552,6 +1552,7 @@
     gap: 6px;
     min-width: 0;
     flex: 1;
+    overflow: hidden;
   }
 
   .gc-name {
@@ -2536,12 +2537,14 @@ function renderMain(preserveScroll = false) {
             return `
               <div class="golfer-card${isCut ? ' gc-cut' : isWD ? ' gc-wd' : ''}" onclick="openPlayerModal('${g.replace(/'/g, "\'")}')">
                 <div class="gc-name-row">
-                  <div>
-                    ${(espnG?.flagUrl && isTournamentWeek(activeMajorId)) ? `<img src="${espnG.flagUrl}" alt="${espnG.country||''}" style="width:16px;height:11px;object-fit:cover;border-radius:1px;flex-shrink:0;margin-right:4px" onerror="this.style.display='none'">` : ''}
-                    <span class="gc-name">${g}</span>
+                  <div style="min-width:0;overflow:hidden">
+                    <div style="display:flex;align-items:center;gap:4px;flex-wrap:nowrap;min-width:0">
+                      ${espnG?.flagUrl && isTournamentWeek(activeMajorId) ? `<img src="${espnG.flagUrl}" alt="" style="width:14px;height:10px;object-fit:cover;border-radius:1px;flex-shrink:0" onerror="this.style.display='none'">` : ''}
+                      <span class="gc-name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${g}</span>
+                      ${statusTag}
+                    </div>
                     ${teeTimeStr && !live && isTournamentWeek(activeMajorId) ? `<div class="gc-tee-time">⏰ ${teeTimeStr}</div>` : ''}
                   </div>
-                  ${statusTag}
                 </div>
                 <div class="gc-scores">
                   ${roundCells}
@@ -3094,7 +3097,7 @@ async function openPlayerModal(golferName) {
   document.body.style.overflow = 'hidden';
 
   // Fetch detailed scorecard from ESPN
-  await loadPlayerScorecard(golferName);
+  loadPlayerScorecard(golferName);
 }
 
 function closePlayerModal() {
@@ -3102,32 +3105,16 @@ function closePlayerModal() {
   document.body.style.overflow = '';
 }
 
-async function loadPlayerScorecard(golferName) {
-  const pmBody = document.getElementById('pmBody');
-
-  // Use cached ESPN data — no extra fetch, never hangs
+function loadPlayerScorecard(golferName) {
   const cached = getGolferScore(activeMajorId, golferName);
-  const competitor = cached?.raw || null;
-
-  // Fetch player profile from ESPN athlete endpoint in parallel
-  let athleteProfile = null;
-  const athleteId = competitor?.athlete?.id;
-  if (athleteId) {
-    try {
-      const r = await fetch(`https://site.api.espn.com/apis/site/v2/sports/golf/athletes/${athleteId}`);
-      if (r.ok) {
-        const j = await r.json();
-        athleteProfile = j?.athlete || null;
-      }
-    } catch(e) { /* silently skip */ }
-  }
-
-  renderPlayerScorecard(competitor, golferName, athleteProfile);
+  renderPlayerScorecard(cached?.raw || null, golferName, null);
 }
 
 
 function renderPlayerScorecard(competitor, golferName, athleteProfile = null) {
   if (!competitor) competitor = getGolferScore(activeMajorId, golferName)?.raw || null;
+  const pmBody = document.getElementById('pmBody');
+  if (!pmBody) return;
   const pars = HOLE_PARS[activeMajorId] || Array(18).fill(4);
   const linescores = competitor.linescores || [];
   const status = competitor.status?.type?.shortDetail || '';
@@ -3149,45 +3136,10 @@ function renderPlayerScorecard(competitor, golferName, athleteProfile = null) {
   ) : null;
 
   let html = '';
+  pmBody.innerHTML = '<div class="player-card-loading"><span class="loading-spinner"></span> Loading…</div>'; // briefly show then replace
 
-  // Player profile card — use athleteProfile from dedicated endpoint, fall back to leaderboard data
-  const fmtDate = d => {
-    if (!d) return '';
-    try {
-      const dt = new Date(d);
-      return dt.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-    } catch(e) { return d; }
-  };
-
-  const ap = athleteProfile; // from /athletes/{id} endpoint
-  const ep = espnGRaw;       // from leaderboard cache
-
-  const birthDate = ap?.dateOfBirth || ep?.birthDate || '';
-  const bp = ap?.birthPlace || ap?.birthplace || {};
-  const birthPlace = typeof bp === 'string' ? bp : [bp.city, bp.state, bp.country].filter(Boolean).join(', ');
-  const age = birthDate ? Math.floor((Date.now() - new Date(birthDate)) / (365.25 * 24 * 3600 * 1000)) : (ap?.age || ep?.age || null);
-  const hand = ap?.hand?.displayValue || ap?.hand || ep?.hand || '';
-  const worldRank = ap?.ranking?.position?.displayValue || ap?.rankList?.[0]?.displayValue || ep?.worldRank || '';
-  const earnings = ap?.statistics?.find(s => s.name === 'moneyList')?.displayValue
-    || ap?.earnings?.displayValue || ep?.earnings || '';
-
-  if (birthDate || worldRank || birthPlace || hand || earnings) {
-    html += `
-      <div class="pm-profile-card">
-        ${worldRank ? `<div class="pm-profile-item"><span class="pm-profile-label">World Ranking</span><span class="pm-profile-val">#${worldRank}</span></div>` : ''}
-        ${birthDate ? `<div class="pm-profile-item"><span class="pm-profile-label">Date of Birth</span><span class="pm-profile-val">${fmtDate(birthDate)}${age ? ` (Age ${age})` : ''}</span></div>` : ''}
-        ${birthPlace ? `<div class="pm-profile-item"><span class="pm-profile-label">Birth Place</span><span class="pm-profile-val">${birthPlace}</span></div>` : ''}
-        ${hand ? `<div class="pm-profile-item"><span class="pm-profile-label">Swings</span><span class="pm-profile-val">${hand}</span></div>` : ''}
-        ${earnings ? `<div class="pm-profile-item"><span class="pm-profile-label">PGA Earnings</span><span class="pm-profile-val">${earnings}</span></div>` : ''}
-      </div>
-      <div style="height:1px;background:var(--border);margin:16px 0"></div>
-    `;
-  }
-
-  if (!competitor) {
-    html += '<div class="scorecard-no-data" style="margin-top:8px">Scorecard data not yet available</div>';
-  } else if (!isTournamentLive(activeMajorId)) {
-    html += '<div class="scorecard-no-data" style="margin-top:8px">Round scores will appear here once play begins on April 9</div>';
+  if (!isTournamentLive(activeMajorId)) {
+    html = '<div class="scorecard-no-data">⛳ Round scores will appear here once play begins on April 9</div>';
   } else if (rounds.length === 0) {
     html = '<div class="scorecard-no-data">No holes played yet</div>';
   } else {
