@@ -1859,8 +1859,8 @@
 const BIN_ID = '69d31dcc856a682189024e2a';
 const API_KEY = '$2a$10$bi8u/5Db8qyxEsv/QYyvuu03trS2sjASrsf0TXa.m3CIfARihdZdS';
 const ADMIN_PW = 'franktowngoats123!';
-const POLL_INTERVAL = 60000; // 60s JSONBin — conserve requests (shared API key)
-const ESPN_POLL = 10000;   // 10s ESPN — fast during live rounds
+const POLL_INTERVAL = 8000;  // 8s JSONBin — matches Toon Squad proven config
+const ESPN_POLL = 10000;  // 10s ESPN
 
 const PLAYERS = ['Christian','Nick','Phil','Shaun','Ben','John','Josh','Sam'];
 
@@ -1881,8 +1881,6 @@ let espnData = {}; // keyed by majorId
 let pollTimer = null;
 let espnTimer = null;
 let syncFailCount = 0; // only show red after 2 consecutive failures
-let jsonBinReady = false; // true once first successful pull completes
-let pendingSave = false;  // queued save waiting for connection
 
 function isTournamentLive(majorId) {
   const now = new Date();
@@ -1987,19 +1985,11 @@ function startPolling() {
 let lastHash = '';
 
 async function syncPull() {
-  if (!state) setSyncStatus('syncing');
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 10000); // 10s timeout
-
-    const r = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest?t=${Date.now()}`, {
-      headers: { 'X-Master-Key': API_KEY },
-      signal: controller.signal,
-      cache: 'no-store'
+    const r = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
+      headers: { 'X-Master-Key': API_KEY }
     });
-    clearTimeout(timeout);
-
-    if (!r.ok) throw new Error('HTTP ' + r.status);
+    if (!r.ok) { setSyncStatus('error'); return; }
     const j = await r.json();
     const raw = j.record;
     const h = JSON.stringify(raw);
@@ -2007,78 +1997,39 @@ async function syncPull() {
       lastHash = h;
       state = migrateState(raw);
       saveCache(raw);
-      syncFailCount = 0;
-      jsonBinReady = true;
       setSyncStatus('live');
-      // If a save was queued while we were connecting, fire it now
-      if (pendingSave) { pendingSave = false; syncPush(); }
-      fetchESPN(activeMajorId).catch(() => {}); // non-blocking, don't let ESPN failure affect sync status
-      renderMain(true); // preserve scroll on background sync
+      syncFailCount = 0;
+      fetchESPN(activeMajorId).catch(() => {});
+      renderMain(true);
     } else {
-      syncFailCount = 0;
-      jsonBinReady = true;
       setSyncStatus('live');
-      if (pendingSave) { pendingSave = false; syncPush(); }
-      if (document.getElementById('loadingState')) renderMain(); else renderMain(true);
+      syncFailCount = 0;
     }
   } catch(e) {
     syncFailCount++;
-    const cached = loadCache();
-    if (cached && !state) state = migrateState(cached);
-    // Only show red dot + toast after 2 consecutive failures
-    if (syncFailCount >= 2) {
-      setSyncStatus('error');
-      if (state) {
-        showToast('Connection lost — retrying…');
-      } else {
-        document.getElementById('mainContent').innerHTML = `
-          <div class="empty-state">
-            <p style="font-family:'DM Mono',monospace;font-size:0.8rem;color:var(--gold)">⚠ Connection failed</p>
-            <p style="font-size:0.65rem;margin-top:8px;opacity:0.5;font-family:'DM Mono',monospace">${e.name}: ${e.message}</p>
-            <button class="btn btn-gold" style="margin-top:20px;font-size:0.8rem" onclick="syncPull()">↻ Tap to Retry</button>
-          </div>`;
-      }
-    }
-    // Always render from cache if available, silently
+    if (syncFailCount >= 2) setSyncStatus('error');
+    console.warn('syncPull failed:', e.message);
     if (state) renderMain(true);
   }
 }
 
-async function syncPush(retries = 2) {
-  if (!jsonBinReady) {
-    // Not connected yet — queue the save, it'll fire once connection established
-    pendingSave = true;
-    showToast('Connecting… save queued');
-    return;
-  }
+async function syncPush() {
   setSyncStatus('syncing');
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 12000);
     const r = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', 'X-Master-Key': API_KEY },
-      body: JSON.stringify(state),
-      signal: controller.signal
+      body: JSON.stringify(state)
     });
-    clearTimeout(timeout);
     if (!r.ok) throw new Error('HTTP ' + r.status);
     saveCache(state);
     setSyncStatus('live');
     showToast('Saved ✓');
     renderMain(true);
-    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
-    pollTimer = setInterval(syncPull, POLL_INTERVAL);
   } catch(e) {
+    setSyncStatus('error');
+    showToast('Save failed — check connection');
     console.warn('syncPush failed:', e.message);
-    if (retries > 0) {
-      // Wait 3 seconds and retry
-      showToast('Retrying save…');
-      setTimeout(() => syncPush(retries - 1), 3000);
-    } else {
-      setSyncStatus('error');
-      showToast('Save failed — tap Refresh and try again');
-    }
   }
 }
 
