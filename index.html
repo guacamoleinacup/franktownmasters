@@ -1992,7 +1992,7 @@ async function syncPull() {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 10000); // 10s timeout
 
-    const r = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
+    const r = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest?t=${Date.now()}`, {
       headers: { 'X-Master-Key': API_KEY },
       signal: controller.signal,
       cache: 'no-store'
