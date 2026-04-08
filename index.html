@@ -2697,8 +2697,13 @@ function renderAdmin() {
                 `).join('')}
                 <div class="roster-input-row" style="margin-top:4px">
                   <span class="roster-slot-label" style="color:var(--gold-light);opacity:0.4">ALT</span>
-                  <input type="text" placeholder="Alternate (withdrawal only)" value="${roster.alternate||''}"
-                    class="alt-input" oninput="updateAlt('${p}',this.value)">
+                  <div class="autocomplete-wrap">
+                    <input type="text" placeholder="Alternate (withdrawal only)" value="${roster.alternate||''}"
+                      class="alt-input"
+                      oninput="handleAltInput(this,'${p}')"
+                      onfocus="handleAltInput(this,'${p}')"
+                      autocomplete="off">
+                  </div>
                 </div>
               </div>
             </div>
@@ -3369,6 +3374,84 @@ async function handleRosterInput(input, player, slot) {
   if (document.body.contains(input) && input.value.trim().length > 0) {
     showDropdown(input, player, slot);
   }
+}
+
+async function handleAltInput(input, player) {
+  updateAlt(player, input.value.trim());
+  if (input.value.trim().length < 1) { closeAllDropdowns(); return; }
+
+  if (fieldCache[activeMajorId]?.length > 0) {
+    showDropdownForAlt(input, player);
+    return;
+  }
+
+  closeAllDropdowns();
+  const wrap = input.closest('.autocomplete-wrap');
+  if (!wrap) return;
+  const loadingEl = document.createElement('div');
+  loadingEl.className = 'autocomplete-dropdown';
+  loadingEl.innerHTML = '<div class="autocomplete-loading"><span class="loading-spinner"></span> Loading field from ESPN…</div>';
+  wrap.appendChild(loadingEl);
+
+  await fetchField(activeMajorId);
+  loadingEl.remove();
+
+  if (document.body.contains(input) && input.value.trim().length > 0) {
+    showDropdownForAlt(input, player);
+  }
+}
+
+function showDropdownForAlt(input, player) {
+  const query = input.value.trim();
+  closeAllDropdowns();
+  updateAlt(player, query);
+
+  const names = fieldCache[activeMajorId] || [];
+  if (query.length < 1 || names.length === 0) return;
+
+  const q = query.toLowerCase();
+  const words = q.split(' ').filter(Boolean);
+  const scoreMatch = name => {
+    const n = name.toLowerCase();
+    const parts = n.split(' ');
+    if (n.startsWith(q)) return 0;
+    if (parts.some(p => p.startsWith(q))) return 1;
+    if (words.every(w => n.includes(w))) return 2;
+    if (n.includes(q)) return 3;
+    return 99;
+  };
+  const matches = names
+    .map(n => ({ n, s: scoreMatch(n) }))
+    .filter(x => x.s < 99)
+    .sort((a, b) => a.s - b.s || a.n.localeCompare(b.n))
+    .slice(0, 8)
+    .map(x => x.n);
+
+  if (matches.length === 0) return;
+
+  const wrap = input.closest('.autocomplete-wrap');
+  if (!wrap) return;
+
+  const dropdown = document.createElement('div');
+  dropdown.className = 'autocomplete-dropdown';
+  matches.forEach(name => {
+    const item = document.createElement('div');
+    item.className = 'autocomplete-item';
+    item.innerHTML = highlightMatch(name, query);
+    const select = e => {
+      e.preventDefault();
+      e.stopPropagation();
+      input.value = name;
+      updateAlt(player, name);
+      closeAllDropdowns();
+    };
+    item.addEventListener('mousedown', select);
+    item.addEventListener('touchstart', select, { passive: false });
+    dropdown.appendChild(item);
+  });
+
+  wrap.appendChild(dropdown);
+  activeDropdown = dropdown;
 }
 
 // Close on outside tap/click — longer delay for mobile
