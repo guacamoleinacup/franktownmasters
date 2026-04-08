@@ -1881,6 +1881,8 @@ let espnData = {}; // keyed by majorId
 let pollTimer = null;
 let espnTimer = null;
 let syncFailCount = 0; // only show red after 2 consecutive failures
+let jsonBinReady = false; // true once first successful pull completes
+let pendingSave = false;  // queued save waiting for connection
 
 function isTournamentLive(majorId) {
   const now = new Date();
@@ -2007,12 +2009,17 @@ async function syncPull() {
       state = migrateState(raw);
       saveCache(raw);
       syncFailCount = 0;
+      jsonBinReady = true;
       setSyncStatus('live');
+      // If a save was queued while we were connecting, fire it now
+      if (pendingSave) { pendingSave = false; syncPush(); }
       fetchESPN(activeMajorId).catch(() => {}); // non-blocking, don't let ESPN failure affect sync status
       renderMain(true); // preserve scroll on background sync
     } else {
       syncFailCount = 0;
+      jsonBinReady = true;
       setSyncStatus('live');
+      if (pendingSave) { pendingSave = false; syncPush(); }
       if (document.getElementById('loadingState')) renderMain(); else renderMain(true);
     }
   } catch(e) {
@@ -2038,28 +2045,41 @@ async function syncPull() {
   }
 }
 
-async function syncPush() {
+async function syncPush(retries = 2) {
+  if (!jsonBinReady) {
+    // Not connected yet — queue the save, it'll fire once connection established
+    pendingSave = true;
+    showToast('Connecting… save queued');
+    return;
+  }
   setSyncStatus('syncing');
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 10000);
-    await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+    const timeout = setTimeout(() => controller.abort(), 12000);
+    const r = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', 'X-Master-Key': API_KEY },
       body: JSON.stringify(state),
       signal: controller.signal
     });
     clearTimeout(timeout);
-    saveCache(state);           // keep cache in sync after push
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    saveCache(state);
     setSyncStatus('live');
     showToast('Saved ✓');
     renderMain(true);
-    // Reset poll timer so we don't poll immediately after a push (wastes a request)
     if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
     pollTimer = setInterval(syncPull, POLL_INTERVAL);
   } catch(e) {
-    setSyncStatus('error');
-    showToast('Save failed — check connection');
+    console.warn('syncPush failed:', e.message);
+    if (retries > 0) {
+      // Wait 3 seconds and retry
+      showToast('Retrying save…');
+      setTimeout(() => syncPush(retries - 1), 3000);
+    } else {
+      setSyncStatus('error');
+      showToast('Save failed — tap Refresh and try again');
+    }
   }
 }
 
