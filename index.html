@@ -2176,15 +2176,16 @@ async function fetchESPN(majorId) {
       const country = c.athlete?.flag?.alt || c.athlete?.citizenship || '';
       const flagUrl = c.athlete?.flag?.href || '';
       // Extra profile info
-      const birthDate = c.athlete?.dateOfBirth || '';
-      const birthPlace = c.athlete?.birthPlace
-        ? [c.athlete.birthPlace.city, c.athlete.birthPlace.state, c.athlete.birthPlace.country].filter(Boolean).join(', ')
-        : '';
+      const birthDate = c.athlete?.dateOfBirth || c.athlete?.dob || '';
+      const bp = c.athlete?.birthPlace || c.athlete?.birthplace || {};
+      const birthPlace = [bp.city, bp.state, bp.country].filter(Boolean).join(', ');
       const age = birthDate ? Math.floor((Date.now() - new Date(birthDate)) / (365.25 * 24 * 3600 * 1000)) : null;
-      const hand = c.athlete?.hand?.displayValue || '';
+      const hand = c.athlete?.hand?.displayValue || c.athlete?.hand || '';
       const worldRank = c.statistics?.find(s => s.name === 'worldRanking')?.displayValue
-        || c.athlete?.rankList?.[0]?.displayValue || '';
-      const earnings = c.statistics?.find(s => s.name === 'moneyList')?.displayValue || '';
+        || c.statistics?.find(s => s.name === 'world_ranking')?.displayValue
+        || c.athlete?.links?.find(l => l.rel?.includes('rank'))?.text || '';
+      const earnings = c.statistics?.find(s => s.name === 'moneyList')?.displayValue
+        || c.statistics?.find(s => s.name === 'earnings')?.displayValue || '';
       scores[name.toLowerCase()] = { score: scoreDisp, toPar, pos, thru, todayDisp, cut, teeTime: teeTimeDisp, headshot, country, flagUrl, birthDate, birthPlace, age, hand, worldRank, earnings, raw: c };
     });
     espnData[majorId] = scores;
@@ -3103,8 +3104,16 @@ function closePlayerModal() {
 
 async function loadPlayerScorecard(golferName) {
   const major = MAJORS.find(m => m.id === activeMajorId);
+
+  // Use already-cached ESPN data first — no extra fetch needed
+  const cached = getGolferScore(activeMajorId, golferName);
+  if (cached?.raw) {
+    renderPlayerScorecard(cached.raw, golferName);
+    return;
+  }
+
   if (!major?.espnId) {
-    document.getElementById('pmBody').innerHTML = '<div class="scorecard-no-data">Scorecard not available for this major yet</div>';
+    renderPlayerScorecard(null, golferName);
     return;
   }
 
@@ -3114,29 +3123,25 @@ async function loadPlayerScorecard(golferName) {
     const j = await r.json();
     const competitors = j?.events?.[0]?.competitions?.[0]?.competitors || [];
 
-    // Find this golfer
-    const key = golferName.toLowerCase().trim();
-    let competitor = competitors.find(c => c.athlete?.displayName?.toLowerCase() === key);
+    const norm = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[.'’]/g, '').trim();
+    const key = norm(golferName);
+    let competitor = competitors.find(c => norm(c.athlete?.displayName || '') === key);
     if (!competitor) {
       competitor = competitors.find(c => {
-        const n = c.athlete?.displayName?.toLowerCase() || '';
+        const n = norm(c.athlete?.displayName || '');
         return n.includes(key) || key.includes(n.split(' ').pop());
       });
     }
 
-    if (!competitor) {
-      document.getElementById('pmBody').innerHTML = '<div class="scorecard-no-data">No scorecard data found for this player</div>';
-      return;
-    }
-
-    renderPlayerScorecard(competitor, golferName);
+    renderPlayerScorecard(competitor || null, golferName);
   } catch(e) {
-    document.getElementById('pmBody').innerHTML = '<div class="scorecard-no-data">Could not load scorecard — try refreshing</div>';
+    renderPlayerScorecard(null, golferName);
     console.warn('Scorecard fetch error', e);
   }
 }
 
 function renderPlayerScorecard(competitor, golferName) {
+  if (!competitor) competitor = getGolferScore(activeMajorId, golferName)?.raw || null;
   const pars = HOLE_PARS[activeMajorId] || Array(18).fill(4);
   const linescores = competitor.linescores || [];
   const status = competitor.status?.type?.shortDetail || '';
@@ -3179,8 +3184,10 @@ function renderPlayerScorecard(competitor, golferName) {
     `;
   }
 
-  if (!isTournamentLive(activeMajorId)) {
-    html += '<div class="scorecard-no-data">Tournament has not started yet — scores will appear here on April 9</div>';
+  if (!competitor) {
+    html += '<div class="scorecard-no-data" style="margin-top:8px">Scorecard data not yet available</div>';
+  } else if (!isTournamentLive(activeMajorId)) {
+    html += '<div class="scorecard-no-data" style="margin-top:8px">Round scores will appear here once play begins on April 9</div>';
   } else if (rounds.length === 0) {
     html = '<div class="scorecard-no-data">No holes played yet</div>';
   } else {
