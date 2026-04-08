@@ -3103,44 +3103,30 @@ function closePlayerModal() {
 }
 
 async function loadPlayerScorecard(golferName) {
-  const major = MAJORS.find(m => m.id === activeMajorId);
+  const pmBody = document.getElementById('pmBody');
 
-  // Use already-cached ESPN data first — no extra fetch needed
+  // Use cached ESPN data — no extra fetch, never hangs
   const cached = getGolferScore(activeMajorId, golferName);
-  if (cached?.raw) {
-    renderPlayerScorecard(cached.raw, golferName);
-    return;
+  const competitor = cached?.raw || null;
+
+  // Fetch player profile from ESPN athlete endpoint in parallel
+  let athleteProfile = null;
+  const athleteId = competitor?.athlete?.id;
+  if (athleteId) {
+    try {
+      const r = await fetch(`https://site.api.espn.com/apis/site/v2/sports/golf/athletes/${athleteId}`);
+      if (r.ok) {
+        const j = await r.json();
+        athleteProfile = j?.athlete || null;
+      }
+    } catch(e) { /* silently skip */ }
   }
 
-  if (!major?.espnId) {
-    renderPlayerScorecard(null, golferName);
-    return;
-  }
-
-  try {
-    const url = `https://site.api.espn.com/apis/site/v2/sports/golf/leaderboard?event=${major.espnId}`;
-    const r = await fetch(url);
-    const j = await r.json();
-    const competitors = j?.events?.[0]?.competitions?.[0]?.competitors || [];
-
-    const norm = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[.'’]/g, '').trim();
-    const key = norm(golferName);
-    let competitor = competitors.find(c => norm(c.athlete?.displayName || '') === key);
-    if (!competitor) {
-      competitor = competitors.find(c => {
-        const n = norm(c.athlete?.displayName || '');
-        return n.includes(key) || key.includes(n.split(' ').pop());
-      });
-    }
-
-    renderPlayerScorecard(competitor || null, golferName);
-  } catch(e) {
-    renderPlayerScorecard(null, golferName);
-    console.warn('Scorecard fetch error', e);
-  }
+  renderPlayerScorecard(competitor, golferName, athleteProfile);
 }
 
-function renderPlayerScorecard(competitor, golferName) {
+
+function renderPlayerScorecard(competitor, golferName, athleteProfile = null) {
   if (!competitor) competitor = getGolferScore(activeMajorId, golferName)?.raw || null;
   const pars = HOLE_PARS[activeMajorId] || Array(18).fill(4);
   const linescores = competitor.linescores || [];
@@ -3164,21 +3150,35 @@ function renderPlayerScorecard(competitor, golferName) {
 
   let html = '';
 
-  // Player profile card — always show if we have data
-  const profile = espnGRaw;
-  if (profile?.birthDate || profile?.worldRank || profile?.birthPlace || profile?.hand) {
-    const fmtDate = d => {
-      if (!d) return '';
+  // Player profile card — use athleteProfile from dedicated endpoint, fall back to leaderboard data
+  const fmtDate = d => {
+    if (!d) return '';
+    try {
       const dt = new Date(d);
       return dt.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-    };
+    } catch(e) { return d; }
+  };
+
+  const ap = athleteProfile; // from /athletes/{id} endpoint
+  const ep = espnGRaw;       // from leaderboard cache
+
+  const birthDate = ap?.dateOfBirth || ep?.birthDate || '';
+  const bp = ap?.birthPlace || ap?.birthplace || {};
+  const birthPlace = typeof bp === 'string' ? bp : [bp.city, bp.state, bp.country].filter(Boolean).join(', ');
+  const age = birthDate ? Math.floor((Date.now() - new Date(birthDate)) / (365.25 * 24 * 3600 * 1000)) : (ap?.age || ep?.age || null);
+  const hand = ap?.hand?.displayValue || ap?.hand || ep?.hand || '';
+  const worldRank = ap?.ranking?.position?.displayValue || ap?.rankList?.[0]?.displayValue || ep?.worldRank || '';
+  const earnings = ap?.statistics?.find(s => s.name === 'moneyList')?.displayValue
+    || ap?.earnings?.displayValue || ep?.earnings || '';
+
+  if (birthDate || worldRank || birthPlace || hand || earnings) {
     html += `
       <div class="pm-profile-card">
-        ${profile.worldRank ? `<div class="pm-profile-item"><span class="pm-profile-label">World Ranking</span><span class="pm-profile-val">#${profile.worldRank}</span></div>` : ''}
-        ${profile.birthDate ? `<div class="pm-profile-item"><span class="pm-profile-label">Date of Birth</span><span class="pm-profile-val">${fmtDate(profile.birthDate)}${profile.age ? ` (Age ${profile.age})` : ''}</span></div>` : ''}
-        ${profile.birthPlace ? `<div class="pm-profile-item"><span class="pm-profile-label">Birth Place</span><span class="pm-profile-val">${profile.birthPlace}</span></div>` : ''}
-        ${profile.hand ? `<div class="pm-profile-item"><span class="pm-profile-label">Swings</span><span class="pm-profile-val">${profile.hand}</span></div>` : ''}
-        ${profile.earnings ? `<div class="pm-profile-item"><span class="pm-profile-label">PGA Earnings</span><span class="pm-profile-val">${profile.earnings}</span></div>` : ''}
+        ${worldRank ? `<div class="pm-profile-item"><span class="pm-profile-label">World Ranking</span><span class="pm-profile-val">#${worldRank}</span></div>` : ''}
+        ${birthDate ? `<div class="pm-profile-item"><span class="pm-profile-label">Date of Birth</span><span class="pm-profile-val">${fmtDate(birthDate)}${age ? ` (Age ${age})` : ''}</span></div>` : ''}
+        ${birthPlace ? `<div class="pm-profile-item"><span class="pm-profile-label">Birth Place</span><span class="pm-profile-val">${birthPlace}</span></div>` : ''}
+        ${hand ? `<div class="pm-profile-item"><span class="pm-profile-label">Swings</span><span class="pm-profile-val">${hand}</span></div>` : ''}
+        ${earnings ? `<div class="pm-profile-item"><span class="pm-profile-label">PGA Earnings</span><span class="pm-profile-val">${earnings}</span></div>` : ''}
       </div>
       <div style="height:1px;background:var(--border);margin:16px 0"></div>
     `;
