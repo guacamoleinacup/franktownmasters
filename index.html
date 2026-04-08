@@ -2134,7 +2134,8 @@ async function fetchESPN(majorId) {
         }
       }
 
-      scores[name.toLowerCase()] = { score: scoreDisp, toPar, pos, thru, todayDisp, cut, teeTime: teeTimeDisp, raw: c };
+      const headshot = c.athlete?.headshot?.href || '';
+      scores[name.toLowerCase()] = { score: scoreDisp, toPar, pos, thru, todayDisp, cut, teeTime: teeTimeDisp, headshot, raw: c };
     });
     espnData[majorId] = scores;
     if (majorId === activeMajorId) {
@@ -3005,11 +3006,21 @@ async function openPlayerModal(golferName) {
   const score = espnG?.score || '–';
   const scoreCls = score.startsWith('-') ? 'score-under' : score.startsWith('+') ? 'score-over' : score === 'E' ? 'score-even' : '';
 
-  pmName.textContent = golferName;
-  pmScoreBig.innerHTML = espnG ? `<span class="${scoreCls}">${score}</span>` : '';
-  // For tee time, fetch from raw ESPN even if not live yet (tee times appear before play)
+  // For tee time + headshot, fetch from raw ESPN
   const espnGRaw = getGolferScore(activeMajorId, golferName);
   const teeTime = espnGRaw?.teeTime || null;
+  const headshotUrl = espnGRaw?.headshot || '';
+
+  if (headshotUrl) {
+    pmName.innerHTML = `<img src="${headshotUrl}" alt="${golferName}"
+      style="width:52px;height:52px;border-radius:50%;object-fit:cover;border:2px solid var(--gold);margin-right:12px;vertical-align:middle;flex-shrink:0"
+      onerror="this.style.display='none'">${golferName}`;
+    pmName.style.cssText = 'display:flex;align-items:center';
+  } else {
+    pmName.textContent = golferName;
+    pmName.style.cssText = '';
+  }
+  pmScoreBig.innerHTML = espnG ? `<span class="${scoreCls}">${score}</span>` : '';
 
   pmMeta.innerHTML = `
     ${owner ? `<span class="player-card-owner-badge">Drafted by ${owner}</span>` : ''}
