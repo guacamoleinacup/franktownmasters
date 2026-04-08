@@ -1957,22 +1957,21 @@ function loadCache() {
 async function init() {
   renderTabs();
 
-  // Render from cache IMMEDIATELY — synchronous, no network needed
+  // Always render immediately — either from cache or fresh empty state
   const cached = loadCache();
   if (cached) {
     state = migrateState(cached);
-    renderMain();
-    setSyncStatus('syncing');
-    // Fetch live data in background — don't await, so UI is already visible
-    syncPull().catch(() => {});
-    startPolling();
   } else {
-    // No cache — must wait for network
-    await syncPull();
-    startPolling();
+    // Render empty state immediately so page never hangs on loading
+    state = migrateState({});
   }
-  // Set initial ESPN dot state based on whether major has a feed
+  renderMain();
+  setSyncStatus('syncing');
   setESPNStatus('pending');
+
+  // Fetch live data in background — don't block UI
+  syncPull().catch(() => {});
+  startPolling();
 }
 
 function startPolling() {
