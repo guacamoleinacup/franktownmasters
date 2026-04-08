@@ -1781,6 +1781,44 @@
   }
 
 
+  /* ── PLAYER PROFILE CARD ── */
+  .pm-profile-card {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 16px;
+    background: rgba(0,0,0,0.15);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 16px;
+    margin-bottom: 4px;
+  }
+
+  .pm-profile-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .pm-profile-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.58rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--gold-light);
+    opacity: 0.6;
+  }
+
+  .pm-profile-val {
+    font-family: 'Libre Baskerville', serif;
+    font-size: 0.82rem;
+    color: var(--cream);
+  }
+
+  @media (max-width: 480px) {
+    .pm-profile-card { grid-template-columns: 1fr; }
+  }
+
+
 </style>
 </head>
 <body>
@@ -2135,7 +2173,19 @@ async function fetchESPN(majorId) {
       }
 
       const headshot = c.athlete?.headshot?.href || '';
-      scores[name.toLowerCase()] = { score: scoreDisp, toPar, pos, thru, todayDisp, cut, teeTime: teeTimeDisp, headshot, raw: c };
+      const country = c.athlete?.flag?.alt || c.athlete?.citizenship || '';
+      const flagUrl = c.athlete?.flag?.href || '';
+      // Extra profile info
+      const birthDate = c.athlete?.dateOfBirth || '';
+      const birthPlace = c.athlete?.birthPlace
+        ? [c.athlete.birthPlace.city, c.athlete.birthPlace.state, c.athlete.birthPlace.country].filter(Boolean).join(', ')
+        : '';
+      const age = birthDate ? Math.floor((Date.now() - new Date(birthDate)) / (365.25 * 24 * 3600 * 1000)) : null;
+      const hand = c.athlete?.hand?.displayValue || '';
+      const worldRank = c.statistics?.find(s => s.name === 'worldRanking')?.displayValue
+        || c.athlete?.rankList?.[0]?.displayValue || '';
+      const earnings = c.statistics?.find(s => s.name === 'moneyList')?.displayValue || '';
+      scores[name.toLowerCase()] = { score: scoreDisp, toPar, pos, thru, todayDisp, cut, teeTime: teeTimeDisp, headshot, country, flagUrl, birthDate, birthPlace, age, hand, worldRank, earnings, raw: c };
     });
     espnData[majorId] = scores;
     if (majorId === activeMajorId) {
@@ -2486,6 +2536,7 @@ function renderMain(preserveScroll = false) {
               <div class="golfer-card${isCut ? ' gc-cut' : isWD ? ' gc-wd' : ''}" onclick="openPlayerModal('${g.replace(/'/g, "\'")}')">
                 <div class="gc-name-row">
                   <div>
+                    ${(espnG?.flagUrl && isTournamentWeek(activeMajorId)) ? `<img src="${espnG.flagUrl}" alt="${espnG.country||''}" style="width:16px;height:11px;object-fit:cover;border-radius:1px;flex-shrink:0;margin-right:4px" onerror="this.style.display='none'">` : ''}
                     <span class="gc-name">${g}</span>
                     ${teeTimeStr && !live && isTournamentWeek(activeMajorId) ? `<div class="gc-tee-time">⏰ ${teeTimeStr}</div>` : ''}
                   </div>
@@ -3022,11 +3073,20 @@ async function openPlayerModal(golferName) {
   }
   pmScoreBig.innerHTML = espnG ? `<span class="${scoreCls}">${score}</span>` : '';
 
+  const country = espnGRaw?.country || '';
+  const flagUrl = espnGRaw?.flagUrl || '';
+
   pmMeta.innerHTML = `
-    ${owner ? `<span class="player-card-owner-badge">Drafted by ${owner}</span>` : ''}
-    ${espnG?.pos ? `<span class="player-modal-stat">Position: <strong>${espnG.pos}</strong></span>` : ''}
-    ${espnG?.thru ? `<span class="player-modal-stat">Thru: <strong>${espnG.thru}</strong></span>` : ''}
-    ${teeTime && isTournamentWeek(activeMajorId) ? `<span class="player-modal-stat">⏰ Tee Time: <strong>${teeTime}</strong></span>` : ''}
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px">
+      ${flagUrl ? `<img src="${flagUrl}" alt="${country}" style="width:24px;height:16px;object-fit:cover;border-radius:2px;border:1px solid rgba(201,168,76,0.2)" onerror="this.style.display='none'">` : ''}
+      ${country ? `<span class="player-modal-stat"><strong>${country}</strong></span>` : ''}
+      ${owner ? `<span class="player-card-owner-badge">Drafted by ${owner}</span>` : ''}
+    </div>
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+      ${espnG?.pos ? `<span class="player-modal-stat">Position: <strong>${espnG.pos}</strong></span>` : ''}
+      ${espnG?.thru && isTournamentLive(activeMajorId) ? `<span class="player-modal-stat">Thru: <strong>${espnG.thru}</strong></span>` : ''}
+      ${teeTime && isTournamentWeek(activeMajorId) ? `<span class="player-modal-stat">⏰ <strong>${teeTime}</strong></span>` : ''}
+    </div>
   `;
   pmBody.innerHTML = '<div class="player-card-loading"><span class="loading-spinner"></span> Loading scorecard…</div>';
   modal.style.display = 'flex';
@@ -3099,8 +3159,28 @@ function renderPlayerScorecard(competitor, golferName) {
 
   let html = '';
 
+  // Player profile card — always show if we have data
+  const profile = espnGRaw;
+  if (profile?.birthDate || profile?.worldRank || profile?.birthPlace || profile?.hand) {
+    const fmtDate = d => {
+      if (!d) return '';
+      const dt = new Date(d);
+      return dt.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    };
+    html += `
+      <div class="pm-profile-card">
+        ${profile.worldRank ? `<div class="pm-profile-item"><span class="pm-profile-label">World Ranking</span><span class="pm-profile-val">#${profile.worldRank}</span></div>` : ''}
+        ${profile.birthDate ? `<div class="pm-profile-item"><span class="pm-profile-label">Date of Birth</span><span class="pm-profile-val">${fmtDate(profile.birthDate)}${profile.age ? ` (Age ${profile.age})` : ''}</span></div>` : ''}
+        ${profile.birthPlace ? `<div class="pm-profile-item"><span class="pm-profile-label">Birth Place</span><span class="pm-profile-val">${profile.birthPlace}</span></div>` : ''}
+        ${profile.hand ? `<div class="pm-profile-item"><span class="pm-profile-label">Swings</span><span class="pm-profile-val">${profile.hand}</span></div>` : ''}
+        ${profile.earnings ? `<div class="pm-profile-item"><span class="pm-profile-label">PGA Earnings</span><span class="pm-profile-val">${profile.earnings}</span></div>` : ''}
+      </div>
+      <div style="height:1px;background:var(--border);margin:16px 0"></div>
+    `;
+  }
+
   if (!isTournamentLive(activeMajorId)) {
-    html = '<div class="scorecard-no-data">Tournament has not started yet — scores will appear here on April 9</div>';
+    html += '<div class="scorecard-no-data">Tournament has not started yet — scores will appear here on April 9</div>';
   } else if (rounds.length === 0) {
     html = '<div class="scorecard-no-data">No holes played yet</div>';
   } else {
