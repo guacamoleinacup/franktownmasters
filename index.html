@@ -3631,9 +3631,22 @@ fetchESPN = async function(majorId) {
 };
 
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') fetchESPN(activeMajorId).catch(() => {});
+  if (document.visibilityState === 'visible') {
+    // Restart polling in case browser throttled/killed timers while hidden
+    startPolling();
+    // Force immediate fresh pull from JSONBin
+    syncPull().catch(() => {});
+    // Reset ESPN debounce so scores refresh immediately
+    lastESPNFetch = 0;
+    fetchESPN(activeMajorId).catch(() => {});
+  }
 });
-window.addEventListener('focus', () => fetchESPN(activeMajorId).catch(() => {}));
+window.addEventListener('focus', () => {
+  startPolling();
+  syncPull().catch(() => {});
+  lastESPNFetch = 0;
+  fetchESPN(activeMajorId).catch(() => {});
+});
 
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
