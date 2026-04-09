@@ -2404,40 +2404,40 @@ function renderAltCard(alt) {
   const thru = espn?.thru || '';
   const sd = espn?.raw?.status?.type?.shortDetail || '';
 
+  // Use identical logic to main golfer cards
+  const altRounds = [];
+  ls.slice(0,4).forEach(r => {
+    const disp = String(r.displayValue ?? '').trim();
+    const n = disp === 'E' ? 0 : parseInt(disp);
+    const tp = isNaN(n) ? null : (Math.abs(n) > 20 ? n - 72 : n);
+    if (tp !== null) altRounds.push(tp);
+  });
+
   const thruStr = String(thru);
-  const altThru = thruStr && thruStr !== '0' && thruStr !== 'F' ? thruStr : '';
-  const altFinal = sd === 'F' || sd === 'F*' || thruStr === 'F';
-  const altLastPlayed = ls.length - 1;
+  const altFinal = thruStr === 'F' || sd === 'F' || sd === 'F*';
+  const altLastPlayed = altRounds.length - 1;
 
   let roundCells = '';
-  if (live && ls.length > 0) {
+  if (live && altRounds.length > 0) {
     roundCells = [0,1,2,3].map(r => {
-      if (r >= ls.length) return '<span class="gc-round gc-round-empty">–</span>';
-      const disp = String(ls[r].displayValue ?? '').trim();
-      const n = disp === 'E' ? 0 : parseInt(disp);
-      const tp = isNaN(n) ? null : (Math.abs(n) > 20 ? n - 72 : n);
-      if (tp === null) return '<span class="gc-round gc-round-empty">–</span>';
-      const cls = tp < 0 ? 'score-under' : tp > 0 ? 'score-over' : 'score-even';
+      if (altRounds[r] === undefined) return '<span class="gc-round gc-round-empty">–</span>';
+      const cls = altRounds[r] < 0 ? 'score-under' : altRounds[r] > 0 ? 'score-over' : 'score-even';
       const isLast = r === altLastPlayed;
       const sub = isLast && altFinal
         ? '<span class="gc-round-sub" style="opacity:0.5">F</span>'
-        : isLast && altThru
+        : isLast && thruStr && thruStr !== '0' && thruStr !== 'F'
         ? '<span class="gc-round-sub">H' + thruStr + '</span>'
         : '';
       const active = isLast && !altFinal ? ' gc-round-active' : '';
-      return '<span class="gc-round ' + cls + active + '">' + (tp === 0 ? 'E' : (tp > 0 ? '+' : '') + tp) + sub + '</span>';
+      return '<span class="gc-round ' + cls + active + '">' + (altRounds[r] === 0 ? 'E' : (altRounds[r] > 0 ? '+' : '') + altRounds[r]) + sub + '</span>';
     }).join('');
   } else {
     roundCells = '<span class="gc-round gc-round-empty" style="grid-column:span 4">–</span>';
   }
 
   let totStr = null, totCls = '';
-  if (live && ls.length > 0) {
-    const sum = ls.reduce((s, r) => {
-      const d = String(r.displayValue ?? '').trim();
-      const n = d === 'E' ? 0 : parseInt(d);
-      return s + (isNaN(n) ? 0 : (Math.abs(n) > 20 ? n - 72 : n));
-    }, 0);
+  if (live && altRounds.length > 0) {
+    const sum = altRounds.reduce((s, r) => s + r, 0);
     totStr = sum === 0 ? 'E' : (sum > 0 ? '+' + sum : '' + sum);
     totCls = sum < 0 ? 'score-under' : sum > 0 ? 'score-over' : 'score-even';
   }
