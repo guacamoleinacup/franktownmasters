@@ -2545,7 +2545,7 @@ function renderMain(preserveScroll = false) {
             const roundCells = live ? [0,1,2,3].map(r => {
               if (rounds[r] === undefined) return `<span class="gc-round gc-round-empty">–</span>`;
               const cls = rounds[r] < 0 ? 'score-under' : rounds[r] > 0 ? 'score-over' : 'score-even';
-              return `<span class="gc-round ${cls}">${rounds[r] > 0 ? '+' : ''}${rounds[r]}</span>`;
+              return `<span class="gc-round ${cls}">${rounds[r] === 0 ? 'E' : (rounds[r] > 0 ? '+' : '') + rounds[r]}</span>`;
             }).join('') : '<span class="gc-round gc-round-empty" style="grid-column:span 4">–</span>';
 
             const teeTimeStr = espnG?.teeTime || '';
@@ -2563,7 +2563,7 @@ function renderMain(preserveScroll = false) {
                 </div>
                 <div class="gc-scores">
                   ${roundCells}
-                  <span class="gc-total ${overallCls}">${live && overallScore ? overallScore : '–'}</span>
+                  <span class="gc-total ${overallCls}">${live && overallScore ? (overallScore === '0' ? 'E' : overallScore) : '–'}</span>
                 </div>
               </div>
             `;
