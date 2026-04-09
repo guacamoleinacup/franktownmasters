@@ -2534,8 +2534,18 @@ function renderMain(preserveScroll = false) {
               if (toPar !== undefined) rounds.push(toPar);
             });
 
-            const overallScore = live && espnG ? espnG.score : null;
-            const overallCls = overallScore ? (overallScore.startsWith('-') ? 'score-under' : overallScore.startsWith('+') ? 'score-over' : 'score-even') : '';
+            // Calculate TOT from round scores (more reliable than ESPN's overall which can lag)
+            let overallScore = null;
+            if (live && espnG) {
+              if (rounds.length > 0) {
+                const sumToPar = rounds.reduce((s, r) => s + r, 0);
+                overallScore = sumToPar === 0 ? 'E' : (sumToPar > 0 ? '+' + sumToPar : String(sumToPar));
+              } else {
+                // No rounds yet but thru > 0 — use ESPN's score
+                overallScore = espnG.score === '0' ? 'E' : espnG.score;
+              }
+            }
+            const overallCls = overallScore ? (overallScore.startsWith('-') ? 'score-under' : overallScore.startsWith('+') ? 'score-over' : overallScore === 'E' ? 'score-even' : '') : '';
 
             let statusTag = '';
             if (isCut) statusTag = '<span class="gc-tag gc-tag-cut">MC</span>';
