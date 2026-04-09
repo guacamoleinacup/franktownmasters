@@ -3120,182 +3120,236 @@ function closePlayerModal() {
   document.body.style.overflow = '';
 }
 
-function loadPlayerScorecard(golferName) {
+async function loadPlayerScorecard(golferName) {
   const cached = getGolferScore(activeMajorId, golferName);
-  renderPlayerScorecard(cached?.raw || null, golferName, null);
+  const competitor = cached?.raw || null;
+  const athleteId = competitor?.athlete?.id;
+
+  // Try ESPN's scorecard endpoint for hole-by-hole data
+  if (athleteId && isTournamentLive(activeMajorId)) {
+    try {
+      const url = `https://site.api.espn.com/apis/site/v2/sports/golf/athletes/${athleteId}/scorecards?event=${MAJORS.find(m=>m.id===activeMajorId)?.espnId}`;
+      const r = await fetch(url);
+      if (r.ok) {
+        const j = await r.json();
+        renderPlayerScorecardHoles(j, competitor, golferName);
+        return;
+      }
+    } catch(e) { /* fall through to round summary */ }
+  }
+
+  // Fallback: round-by-round summary from leaderboard data
+  renderPlayerScorecard(competitor, golferName, null);
 }
 
+
+function renderPlayerScorecardHoles(scorecardData, competitor, golferName) {
+  const pmBody = document.getElementById('pmBody');
+  if (!pmBody) return;
+  const pars = HOLE_PARS[activeMajorId] || Array(18).fill(4);
+
+  // ESPN scorecard endpoint returns rounds array
+  const rounds = scorecardData?.rounds || scorecardData?.scores || [];
+  if (!rounds.length) {
+    renderPlayerScorecard(competitor, golferName, null);
+    return;
+  }
+
+  let html = '';
+  rounds.forEach((round, ri) => {
+    const holes = round.holes || round.linescores || [];
+    if (!holes.length) return;
+    const roundLabel = ['Round 1','Round 2','Round 3','Round 4'][ri] || `Round ${ri+1}`;
+    const completedHoles = holes.filter(h => h.score !== undefined && h.score !== null);
+    const roundStrokes = completedHoles.reduce((s,h) => s + (parseInt(h.score||h.value)||0), 0);
+    const roundPar = pars.slice(0, completedHoles.length).reduce((a,b)=>a+b,0);
+    const roundToPar = completedHoles.length > 0 ? roundStrokes - roundPar : 0;
+    const roundToParStr = roundToPar === 0 ? 'E' : (roundToPar > 0 ? '+'+roundToPar : ''+roundToPar);
+    const roundToParCls = roundToPar < 0 ? 'score-under' : roundToPar > 0 ? 'score-over' : 'score-even';
+    const front = holes.slice(0,9);
+    const back = holes.slice(9,18);
+    const frontStrokes = front.reduce((s,h)=>s+(parseInt(h.score||h.value)||0),0);
+    const backStrokes = back.reduce((s,h)=>s+(parseInt(h.score||h.value)||0),0);
+
+    html += `<div class="scorecard-round">
+      <div class="scorecard-round-title">
+        <span>${roundLabel}${completedHoles.length < 18 ? ` (In Progress · Hole ${completedHoles.length})` : ''}</span>
+        <span class="scorecard-round-total ${roundToParCls}">${roundToParStr} &nbsp;(${roundStrokes} strokes)</span>
+      </div>
+      <table class="scorecard-table">
+        <thead>
+          <tr>
+            <th>Hole</th>
+            ${[1,2,3,4,5,6,7,8,9].map(h=>`<th>${h}</th>`).join('')}
+            <th style="background:rgba(0,0,0,0.15);border-left:2px solid var(--border)">OUT</th>
+            ${back.length ? [10,11,12,13,14,15,16,17,18].slice(0,back.length).map(h=>`<th>${h}</th>`).join('') : ''}
+            ${back.length ? `<th style="background:rgba(0,0,0,0.15);border-left:2px solid var(--border)">IN</th><th style="background:rgba(0,0,0,0.15)">TOT</th>` : ''}
+          </tr>
+          <tr class="sc-par-row">
+            <th>Par</th>
+            ${pars.slice(0,9).map(p=>`<th>${p}</th>`).join('')}
+            <th style="background:rgba(0,0,0,0.15);border-left:2px solid var(--border)">${pars.slice(0,9).reduce((a,b)=>a+b,0)}</th>
+            ${back.length ? pars.slice(9,9+back.length).map(p=>`<th>${p}</th>`).join('') : ''}
+            ${back.length ? `<th style="background:rgba(0,0,0,0.15);border-left:2px solid var(--border)">${pars.slice(9,18).reduce((a,b)=>a+b,0)}</th><th style="background:rgba(0,0,0,0.15)">72</th>` : ''}
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>${golferName.split(' ').pop()}</td>
+            ${front.map((h,hi) => {
+              const strokes = parseInt(h.score||h.value)||0;
+              const par = pars[hi];
+              const diff = strokes - par;
+              const cls = diff<=-2?'score-eagle':diff===-1?'score-birdie':diff===1?'score-bogey':diff>=2?'score-double':'score-par';
+              return strokes ? `<td class="${cls}">${strokes}</td>` : '<td>–</td>';
+            }).join('')}
+            ${front.length < 9 ? Array(9-front.length).fill('<td>–</td>').join('') : ''}
+            <td style="border-left:2px solid var(--border);font-weight:700">${frontStrokes||'–'}</td>
+            ${back.map((h,hi) => {
+              const strokes = parseInt(h.score||h.value)||0;
+              const par = pars[9+hi];
+              const diff = strokes - par;
+              const cls = diff<=-2?'score-eagle':diff===-1?'score-birdie':diff===1?'score-bogey':diff>=2?'score-double':'score-par';
+              return strokes ? `<td class="${cls}">${strokes}</td>` : '<td>–</td>';
+            }).join('')}
+            ${back.length && back.length < 9 ? Array(9-back.length).fill('<td>–</td>').join('') : ''}
+            ${back.length ? `<td style="border-left:2px solid var(--border);font-weight:700">${backStrokes||'–'}</td><td style="font-weight:700">${roundStrokes||'–'}</td>` : ''}
+          </tr>
+        </tbody>
+      </table>
+    </div>`;
+  });
+
+  // Summary
+  const overallScore = competitor?.score?.displayValue || 'E';
+  const overallCls = overallScore.startsWith('-') ? 'score-under' : overallScore.startsWith('+') ? 'score-over' : 'score-even';
+  const totalStrokes = rounds.reduce((s,r) => s + (r.holes||r.linescores||[]).reduce((a,h)=>a+(parseInt(h.score||h.value)||0),0), 0);
+  html += `<div style="border-top:1px solid var(--border);padding-top:16px;margin-top:8px;display:flex;gap:20px;flex-wrap:wrap">
+    ${rounds.map((r,ri) => {
+      const holes = (r.holes||r.linescores||[]).filter(h=>h.score!==undefined&&h.score!==null);
+      const strokes = holes.reduce((s,h)=>s+(parseInt(h.score||h.value)||0),0);
+      const par = pars.slice(0,holes.length).reduce((a,b)=>a+b,0);
+      const tp = holes.length ? strokes-par : 0;
+      const tpStr = tp===0?'E':(tp>0?'+'+tp:''+tp);
+      const cls = tp<0?'score-under':tp>0?'score-over':'score-even';
+      return `<div style="text-align:center;min-width:52px">
+        <div style="font-family:'DM Mono',monospace;font-size:0.58rem;color:var(--gold-light);opacity:0.6;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px">R${ri+1}</div>
+        <div class="score-val ${cls}" style="font-size:1.1rem;font-weight:700">${tpStr}</div>
+        ${strokes ? `<div style="font-family:'DM Mono',monospace;font-size:0.6rem;color:rgba(200,200,200,0.4);margin-top:2px">${strokes}</div>` : ''}
+      </div>`;
+    }).join('')}
+    <div style="text-align:center;min-width:52px;border-left:1px solid var(--border);padding-left:20px">
+      <div style="font-family:'DM Mono',monospace;font-size:0.58rem;color:var(--gold-light);opacity:0.6;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px">Total</div>
+      <div class="score-val ${overallCls}" style="font-size:1.1rem;font-weight:700">${overallScore==='0'?'E':overallScore}</div>
+      ${totalStrokes ? `<div style="font-family:'DM Mono',monospace;font-size:0.6rem;color:rgba(200,200,200,0.4);margin-top:2px">${totalStrokes}</div>` : ''}
+    </div>
+  </div>`;
+
+  html += `<div style="margin-top:16px;display:flex;gap:14px;flex-wrap:wrap;font-family:'DM Mono',monospace;font-size:0.6rem;opacity:0.6">
+    <span class="score-eagle">■ Eagle or better</span>
+    <span class="score-birdie">■ Birdie</span>
+    <span class="score-par">■ Par</span>
+    <span class="score-bogey">■ Bogey</span>
+    <span class="score-double">■ Double+</span>
+  </div>`;
+
+  pmBody.innerHTML = html;
+}
 
 function renderPlayerScorecard(competitor, golferName, athleteProfile = null) {
   if (!competitor) competitor = getGolferScore(activeMajorId, golferName)?.raw || null;
   const pmBody = document.getElementById('pmBody');
   if (!pmBody) return;
-  const pars = HOLE_PARS[activeMajorId] || Array(18).fill(4);
-  const linescores = competitor.linescores || [];
-  console.log('[SCORECARD] first 3 holes:', JSON.stringify(linescores.slice(0,3).map(h => ({value: h.value, displayValue: h.displayValue, type: h.type, period: h.period}))));
-  const status = competitor.status?.type?.shortDetail || '';
-  const isCut = (competitor.status?.type?.id || '').toLowerCase().includes('cut');
-
-  // ESPN linescores: each entry is one hole played (up to 72 holes = 4 rounds × 18)
-  // group into rounds of 18
-  const rounds = [];
-  for (let r = 0; r < 4; r++) {
-    const start = r * 18;
-    const holes = linescores.slice(start, start + 18);
-    if (holes.length > 0) rounds.push(holes);
-  }
-
-  const mData = state?.majors?.[activeMajorId];
-  const owner = mData ? PLAYERS.find(p =>
-    mData.rosters[p]?.picks?.includes(golferName) ||
-    mData.rosters[p]?.alternate === golferName
-  ) : null;
 
   let html = '';
-  pmBody.innerHTML = '<div class="player-card-loading"><span class="loading-spinner"></span> Loading…</div>'; // briefly show then replace
 
   if (!isTournamentLive(activeMajorId)) {
     html = '<div class="scorecard-no-data">⛳ Round scores will appear here once play begins on April 9</div>';
-  } else if (rounds.length === 0) {
-    html = '<div class="scorecard-no-data">No holes played yet</div>';
-  } else {
-    rounds.forEach((holes, ri) => {
-      const roundLabel = ['Round 1', 'Round 2', 'Round 3', 'Round 4'][ri];
-      const roundTotal = holes.reduce((sum, h) => sum + (parseInt(h.value) || 0), 0);
-      const roundPar = pars.slice(0, holes.length).reduce((a,b) => a+b, 0);
-      const roundToPar = roundTotal - roundPar;
-      const roundToParStr = roundToPar === 0 ? 'E' : (roundToPar > 0 ? `+${roundToPar}` : `${roundToPar}`);
-      const roundToParCls = roundToPar < 0 ? 'score-under' : roundToPar > 0 ? 'score-over' : 'score-even';
-
-      // front 9 / back 9
-      const front = holes.slice(0, 9);
-      const back  = holes.slice(9, 18);
-      const frontPar  = pars.slice(0, 9).reduce((a,b)=>a+b,0);
-      const backPar   = pars.slice(9, 18).reduce((a,b)=>a+b,0);
-      const frontTotal = front.reduce((s,h) => s+(parseInt(h.value)||0), 0);
-      const backTotal  = back.reduce((s,h)  => s+(parseInt(h.value)||0), 0);
-      const totalStrokes = roundTotal;
-
-      html += `
-        <div class="scorecard-round">
-          <div class="scorecard-round-title">
-            <span>${roundLabel}${ri === rounds.length - 1 && holes.length < 18 ? ` (In Progress · Hole ${holes.length})` : ''}</span>
-            <span class="scorecard-round-total ${roundToParCls}">${roundToParStr} &nbsp;(${totalStrokes} strokes)</span>
-          </div>
-          <table class="scorecard-table">
-            <thead>
-              <tr>
-                <th>Hole</th>
-                ${[1,2,3,4,5,6,7,8,9].map(h=>`<th>${h}</th>`).join('')}
-                <th style="background:rgba(0,0,0,0.15);border-left:2px solid var(--border)">OUT</th>
-                ${back.length > 0 ? [10,11,12,13,14,15,16,17,18].slice(0,back.length).map(h=>`<th>${h}</th>`).join('') : ''}
-                ${back.length > 0 ? `<th style="background:rgba(0,0,0,0.15);border-left:2px solid var(--border)">IN</th>` : ''}
-                ${back.length > 0 ? `<th style="background:rgba(0,0,0,0.15)">TOT</th>` : ''}
-              </tr>
-              <tr class="sc-par-row">
-                <th>Par</th>
-                ${pars.slice(0,9).map(p=>`<th>${p}</th>`).join('')}
-                <th style="background:rgba(0,0,0,0.15);border-left:2px solid var(--border)">${frontPar}</th>
-                ${back.length > 0 ? pars.slice(9, 9+back.length).map(p=>`<th>${p}</th>`).join('') : ''}
-                ${back.length > 0 ? `<th style="background:rgba(0,0,0,0.15);border-left:2px solid var(--border)">${backPar}</th>` : ''}
-                ${back.length > 0 ? `<th style="background:rgba(0,0,0,0.15)">${frontPar+backPar}</th>` : ''}
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>${golferName.split(' ').pop()}</td>
-                ${front.map((h, hi) => {
-                  // Use displayValue (hole to-par) to derive actual strokes
-                  // ESPN displayValue: "-1" birdie, "0" par, "+1" bogey, etc.
-                  const par = pars[hi];
-                  const disp = String(h.displayValue ?? '').trim();
-                  let strokes = parseInt(h.value) || 0;
-                  // If value looks wrong (cumulative), derive from displayValue + par
-                  if (disp !== '' && disp !== '-') {
-                    const holeToPar = disp === 'E' ? 0 : parseInt(disp);
-                    if (!isNaN(holeToPar)) strokes = par + holeToPar;
-                  }
-                  const diff = strokes - par;
-                  let cls = '';
-                  if (diff <= -2) cls = 'score-eagle';
-                  else if (diff === -1) cls = 'score-birdie';
-                  else if (diff === 1) cls = 'score-bogey';
-                  else if (diff >= 2) cls = 'score-double';
-                  else cls = 'score-par';
-                  return `<td class="${cls}">${strokes || '–'}</td>`;
-                }).join('')}
-                ${front.length < 9 ? Array(9-front.length).fill('<td>–</td>').join('') : ''}
-                <td style="border-left:2px solid var(--border);font-weight:700">${frontTotal || '–'}</td>
-                ${back.map((h, hi) => {
-                  const par = pars[9+hi];
-                  const disp = String(h.displayValue ?? '').trim();
-                  let strokes = parseInt(h.value) || 0;
-                  if (disp !== '' && disp !== '-') {
-                    const holeToPar = disp === 'E' ? 0 : parseInt(disp);
-                    if (!isNaN(holeToPar)) strokes = par + holeToPar;
-                  }
-                  const diff = strokes - par;
-                  let cls = '';
-                  if (diff <= -2) cls = 'score-eagle';
-                  else if (diff === -1) cls = 'score-birdie';
-                  else if (diff === 1) cls = 'score-bogey';
-                  else if (diff >= 2) cls = 'score-double';
-                  else cls = 'score-par';
-                  return `<td class="${cls}">${strokes || '–'}</td>`;
-                }).join('')}
-                ${back.length > 0 && back.length < 9 ? Array(9-back.length).fill('<td>–</td>').join('') : ''}
-                ${back.length > 0 ? `<td style="border-left:2px solid var(--border);font-weight:700">${backTotal || '–'}</td>` : ''}
-                ${back.length > 0 ? `<td style="font-weight:700">${totalStrokes}</td>` : ''}
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      `;
-    });
-
-    // Running to-par summary across all rounds
-    html += `
-      <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:4px">
-        <div style="font-family:'DM Mono',monospace;font-size:0.62rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold);opacity:0.7;margin-bottom:10px">Tournament Summary</div>
-        <div style="display:flex;gap:20px;flex-wrap:wrap">
-          ${rounds.map((holes, ri) => {
-            const roundTotal = holes.reduce((sum, h) => sum + (parseInt(h.value) || 0), 0);
-            const roundPar = pars.slice(0, holes.length).reduce((a,b)=>a+b,0);
-            const toPar = roundTotal - roundPar;
-            const toParStr = toPar === 0 ? 'E' : (toPar > 0 ? `+${toPar}` : `${toPar}`);
-            const cls = toPar < 0 ? 'score-under' : toPar > 0 ? 'score-over' : 'score-even';
-            return `
-              <div style="text-align:center;min-width:52px">
-                <div style="font-family:'DM Mono',monospace;font-size:0.58rem;color:var(--gold-light);opacity:0.6;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px">R${ri+1}</div>
-                <div class="score-val ${cls}" style="font-size:1.1rem;font-weight:700">${toParStr}</div>
-                <div style="font-family:'DM Mono',monospace;font-size:0.6rem;color:rgba(200,200,200,0.4);margin-top:2px">${roundTotal} strokes</div>
-              </div>
-            `;
-          }).join('')}
-          <div style="text-align:center;min-width:52px;border-left:1px solid var(--border);padding-left:20px">
-            <div style="font-family:'DM Mono',monospace;font-size:0.58rem;color:var(--gold-light);opacity:0.6;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px">Total</div>
-            <div class="score-val ${(() => { const s = competitor.score?.displayValue || 'E'; return s.startsWith('-')?'score-under':s.startsWith('+')?'score-over':'score-even'; })()} " style="font-size:1.1rem;font-weight:700">${competitor.score?.displayValue || 'E'}</div>
-            <div style="font-family:'DM Mono',monospace;font-size:0.6rem;color:rgba(200,200,200,0.4);margin-top:2px">${rounds.reduce((s,r)=>s+r.reduce((a,h)=>a+(parseInt(h.value)||0),0),0)} strokes</div>
-          </div>
-        </div>
-      </div>
-    `;
+    pmBody.innerHTML = html;
+    return;
   }
 
-  // Legend — only show when live
-  if (isTournamentLive(activeMajorId)) {
-    html += `
-      <div style="margin-top:20px;display:flex;gap:14px;flex-wrap:wrap;font-family:'DM Mono',monospace;font-size:0.6rem;opacity:0.6">
-        <span class="score-eagle">■ Eagle or better</span>
-        <span class="score-birdie">■ Birdie</span>
-        <span class="score-par">■ Par</span>
-        <span class="score-bogey">■ Bogey</span>
-        <span class="score-double">■ Double+</span>
-      </div>
-    `;
+  if (!competitor) {
+    html = '<div class="scorecard-no-data">No scorecard data available</div>';
+    pmBody.innerHTML = html;
+    return;
   }
 
-  document.getElementById('pmBody').innerHTML = html;
+  // ESPN leaderboard API provides one linescore per ROUND (not per hole)
+  // value = strokes played so far in round, displayValue = to-par for round so far
+  const linescores = competitor.linescores || [];
+  const roundLabels = ['Round 1', 'Round 2', 'Round 3', 'Round 4'];
+
+  // Build round rows
+  if (linescores.length === 0) {
+    html = '<div class="scorecard-no-data">No round data yet — check back once play begins</div>';
+    pmBody.innerHTML = html;
+    return;
+  }
+
+  html += `
+    <table class="scorecard-table" style="width:100%;margin-bottom:20px">
+      <thead>
+        <tr>
+          <th style="text-align:left;padding-left:12px">Round</th>
+          <th>Score</th>
+          <th>Strokes</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+
+  let totalStrokes = 0;
+  linescores.forEach((ls, i) => {
+    if (i >= 4) return;
+    const disp = String(ls.displayValue ?? '').trim();
+    const strokes = parseInt(ls.value) || 0;
+    const period = ls.period || (i + 1);
+    const toPar = disp === 'E' ? 0 : (parseInt(disp) || 0);
+    const toParStr = toPar === 0 ? 'E' : (toPar > 0 ? '+' + toPar : String(toPar));
+    const cls = toPar < 0 ? 'score-under' : toPar > 0 ? 'score-over' : 'score-even';
+    totalStrokes += strokes;
+
+    // Determine round status
+    const thru = competitor.status?.thru || 0;
+    const shortDetail = competitor.status?.type?.shortDetail || '';
+    const isCurrentRound = (i === linescores.length - 1);
+    let status = shortDetail === 'F' || shortDetail === 'F*' ? 'Final' : 
+                 isCurrentRound && thru > 0 ? `Thru ${thru}` : 
+                 isCurrentRound ? 'In Progress' : 'Final';
+
+    html += `
+      <tr>
+        <td style="text-align:left;padding-left:12px;font-family:'Libre Baskerville',serif">${roundLabels[i] || 'Round ' + period}</td>
+        <td class="num"><span class="score-val ${cls}">${toParStr}</span></td>
+        <td class="num" style="font-family:'DM Mono',monospace;font-size:0.8rem;color:rgba(200,200,200,0.6)">${strokes}</td>
+        <td class="num" style="font-family:'DM Mono',monospace;font-size:0.7rem;color:rgba(200,200,200,0.4)">${status}</td>
+      </tr>
+    `;
+  });
+
+  html += `</tbody></table>`;
+
+  // Overall summary
+  const overallScore = competitor.score?.displayValue || 'E';
+  const overallCls = overallScore.startsWith('-') ? 'score-under' : overallScore.startsWith('+') ? 'score-over' : 'score-even';
+  html += `
+    <div style="border-top:1px solid var(--border);padding-top:16px;display:flex;gap:24px;flex-wrap:wrap">
+      <div style="text-align:center;min-width:60px">
+        <div style="font-family:'DM Mono',monospace;font-size:0.6rem;color:var(--gold-light);opacity:0.6;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px">Total</div>
+        <div class="score-val ${overallCls}" style="font-size:1.4rem;font-weight:700">${overallScore === '0' ? 'E' : overallScore}</div>
+        <div style="font-family:'DM Mono',monospace;font-size:0.6rem;color:rgba(200,200,200,0.4);margin-top:2px">${totalStrokes} strokes</div>
+      </div>
+      ${competitor.status?.position?.displayName ? `
+      <div style="text-align:center;min-width:60px">
+        <div style="font-family:'DM Mono',monospace;font-size:0.6rem;color:var(--gold-light);opacity:0.6;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px">Position</div>
+        <div style="font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:700;color:var(--cream)">${competitor.status.position.displayName}</div>
+      </div>` : ''}
+    </div>
+  `;
+
+  pmBody.innerHTML = html;
 }
 
 
