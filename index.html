@@ -2505,19 +2505,34 @@ function renderMain(preserveScroll = false) {
             const isWinner = mData.majorWinner === g;
             const espnG = getGolferScore(activeMajorId, g);
 
-            // Per-round scores from ESPN linescores
+            // Per-round scores — read directly from ESPN's linescores array
+            // Each linescore entry is one ROUND (not one hole) for the leaderboard API
             const linescores = espnG?.raw?.linescores || [];
             const rounds = [];
-            for (let r = 0; r < 4; r++) {
-              const holes = linescores.slice(r * 18, r * 18 + 18);
-              if (holes.length > 0) {
-                const pars = (HOLE_PARS[activeMajorId] || Array(18).fill(4)).slice(0, holes.length);
-                const strokes = holes.reduce((s, h) => s + (parseInt(h.value) || 0), 0);
-                const par = pars.reduce((a, b) => a + b, 0);
-                const toPar = strokes - par;
-                rounds.push(toPar);
+            linescores.forEach((ls, r) => {
+              if (r >= 4) return;
+              // displayValue is the round score e.g. "-5", "+2", "E", "67", "72"
+              const disp = ls.displayValue || ls.value;
+              if (disp === undefined || disp === null || disp === '') return;
+              // ESPN sometimes gives stroke total (e.g. 67), sometimes gives to-par (e.g. -5)
+              // The value field is strokes, displayValue is to-par relative to round par
+              const dispStr = String(disp);
+              let toPar;
+              if (dispStr === 'E') toPar = 0;
+              else {
+                const n = parseInt(dispStr);
+                if (!isNaN(n)) {
+                  // If it looks like a full round score (65-80 range), convert to to-par
+                  if (Math.abs(n) > 20) {
+                    const roundPar = 72; // Augusta is par 72
+                    toPar = n - roundPar;
+                  } else {
+                    toPar = n;
+                  }
+                }
               }
-            }
+              if (toPar !== undefined) rounds.push(toPar);
+            });
 
             const overallScore = live && espnG ? espnG.score : null;
             const overallCls = overallScore ? (overallScore.startsWith('-') ? 'score-under' : overallScore.startsWith('+') ? 'score-over' : 'score-even') : '';
