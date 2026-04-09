@@ -2404,8 +2404,9 @@ function renderAltCard(alt) {
   const thru = espn?.thru || '';
   const sd = espn?.raw?.status?.type?.shortDetail || '';
 
-  const altThru = thru && thru !== '0' && thru !== 'F' ? thru : '';
-  const altFinal = sd === 'F' || sd === 'F*' || thru === 'F';
+  const thruStr = String(thru);
+  const altThru = thruStr && thruStr !== '0' && thruStr !== 'F' ? thruStr : '';
+  const altFinal = sd === 'F' || sd === 'F*' || thruStr === 'F';
   const altLastPlayed = ls.length - 1;
 
   let roundCells = '';
@@ -2421,7 +2422,7 @@ function renderAltCard(alt) {
       const sub = isLast && altFinal
         ? '<span class="gc-round-sub" style="opacity:0.5">F</span>'
         : isLast && altThru
-        ? '<span class="gc-round-sub">H' + altThru + '</span>'
+        ? '<span class="gc-round-sub">H' + thruStr + '</span>'
         : '';
       const active = isLast && !altFinal ? ' gc-round-active' : '';
       return '<span class="gc-round ' + cls + active + '">' + (tp === 0 ? 'E' : (tp > 0 ? '+' : '') + tp) + sub + '</span>';
