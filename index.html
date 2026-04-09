@@ -3132,7 +3132,7 @@ function renderPlayerScorecard(competitor, golferName, athleteProfile = null) {
   if (!pmBody) return;
   const pars = HOLE_PARS[activeMajorId] || Array(18).fill(4);
   const linescores = competitor.linescores || [];
-  console.log('[SCORECARD] raw linescores:', JSON.stringify(linescores.slice(0,4)));
+  console.log('[SCORECARD] first 3 holes:', JSON.stringify(linescores.slice(0,3).map(h => ({value: h.value, displayValue: h.displayValue, type: h.type, period: h.period}))));
   const status = competitor.status?.type?.shortDetail || '';
   const isCut = (competitor.status?.type?.id || '').toLowerCase().includes('cut');
 
