@@ -1855,1864 +1855,41 @@
 
 
 <!-- PLAYER CARD MODAL -->
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Franktown Golf Majors</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<style>
-  :root {
-    --green-deep: #1a2e1a;
-    --green-mid: #2d4a2d;
-    --green-light: #3d6b3d;
-    --green-fade: #4a7c4a;
-    --gold: #c9a84c;
-    --gold-light: #e0c070;
-    --gold-pale: #f5e8c0;
-    --cream: #faf6ed;
-    --cream-dark: #f0e8d5;
-    --white: #ffffff;
-    --text-dark: #1a1a1a;
-    --text-mid: #3a3a3a;
-    --text-light: #6a6a6a;
-    --red: #8b2020;
-    --red-light: #c0392b;
-    --border: rgba(201,168,76,0.3);
-  }
-
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-
-  html {
-    scroll-padding-top: 110px; /* header + tabs height */
-  }
-
-  body {
-    font-family: 'Libre Baskerville', Georgia, serif;
-    background: var(--green-deep);
-    color: var(--cream);
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
-
-  /* ── HEADER ── */
-  .site-header {
-    background: var(--green-deep);
-    border-bottom: 2px solid var(--gold);
-    padding: 0;
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
-  }
-
-  .header-inner {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 16px 24px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-  }
-
-  .site-title {
-    font-family: 'Playfair Display', Georgia, serif;
-    font-size: 1.6rem;
-    font-weight: 700;
-    color: var(--gold);
-    letter-spacing: 0.02em;
-    line-height: 1.1;
-  }
-
-  .site-subtitle {
-    font-size: 0.65rem;
-    color: var(--gold-light);
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    font-family: 'DM Mono', monospace;
-    margin-top: 2px;
-  }
-
-  .header-right {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .sync-status {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.7rem;
-    color: var(--gold-light);
-    opacity: 0.7;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-
-  .sync-dot {
-    width: 7px; height: 7px;
-    border-radius: 50%;
-    background: #888;
-    transition: background 0.3s;
-  }
-  .sync-dot.live { background: #4caf50; box-shadow: 0 0 6px #4caf50; }
-  .sync-dot.error { background: var(--red-light); }
-
-  .btn {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.72rem;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    padding: 7px 14px;
-    border-radius: 3px;
-    border: 1px solid;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .btn-gold {
-    background: var(--gold);
-    color: var(--green-deep);
-    border-color: var(--gold);
-    font-weight: 500;
-  }
-  .btn-gold:hover { background: var(--gold-light); border-color: var(--gold-light); }
-
-  .btn-outline {
-    background: transparent;
-    color: var(--gold);
-    border-color: var(--border);
-  }
-  .btn-outline:hover { border-color: var(--gold); background: rgba(201,168,76,0.08); }
-
-  .btn-sm { padding: 5px 10px; font-size: 0.65rem; }
-  .btn-danger { background: var(--red); color: white; border-color: var(--red); }
-  .btn-danger:hover { background: var(--red-light); }
-
-  /* ── MAJOR TABS ── */
-  .major-tabs {
-    background: var(--green-mid);
-    border-bottom: 1px solid var(--border);
-  }
-
-  .tabs-inner {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 24px;
-    display: flex;
-    gap: 0;
-    overflow-x: auto;
-  }
-
-  .tab {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.72rem;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    padding: 13px 20px;
-    color: var(--gold-light);
-    cursor: pointer;
-    border-bottom: 3px solid transparent;
-    white-space: nowrap;
-    opacity: 0.6;
-    transition: all 0.2s;
-    background: none;
-    border-top: none;
-    border-left: none;
-    border-right: none;
-    font-family: 'DM Mono', monospace;
-  }
-
-  .tab:hover { opacity: 0.9; }
-  .tab.active { opacity: 1; border-bottom-color: var(--gold); color: var(--gold); }
-  .tab .tab-year { font-size: 0.6rem; opacity: 0.7; display: block; }
-
-  /* ── MAIN ── */
-  .main {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 32px 24px;
-  }
-
-  /* ── MAJOR HERO ── */
-  .major-hero {
-    background: linear-gradient(135deg, var(--green-mid) 0%, var(--green-deep) 100%);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 28px 32px;
-    margin-bottom: 28px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 24px;
-    flex-wrap: wrap;
-  }
-
-  .major-info h2 {
-    font-family: 'Playfair Display', serif;
-    font-size: 1.8rem;
-    font-weight: 700;
-    color: var(--gold);
-    margin-bottom: 4px;
-  }
-
-  .major-info .major-meta {
-    font-size: 0.78rem;
-    color: var(--gold-light);
-    opacity: 0.8;
-    letter-spacing: 0.05em;
-    font-family: 'DM Mono', monospace;
-  }
-
-  .pot-display {
-    text-align: right;
-  }
-
-  .pot-amount {
-    font-family: 'Playfair Display', serif;
-    font-size: 2.4rem;
-    font-weight: 700;
-    color: var(--gold);
-    line-height: 1;
-  }
-
-  .pot-label {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.65rem;
-    color: var(--gold-light);
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    opacity: 0.7;
-    margin-top: 4px;
-  }
-
-  .pot-breakdown {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.65rem;
-    color: var(--gold-light);
-    opacity: 0.6;
-    margin-top: 2px;
-  }
-
-  /* ── SECTION HEADER ── */
-  .section-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 16px;
-    gap: 12px;
-  }
-
-  .section-title {
-    font-family: 'Playfair Display', serif;
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: var(--gold-light);
-    letter-spacing: 0.02em;
-  }
-
-  .divider {
-    height: 1px;
-    background: var(--border);
-    margin: 28px 0;
-  }
-
-  /* ── LEADERBOARD TABLE ── */
-  .lb-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.85rem;
-  }
-
-  .lb-table th {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.62rem;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--gold);
-    opacity: 0.7;
-    padding: 8px 12px;
-    text-align: left;
-    border-bottom: 1px solid var(--border);
-  }
-
-  .lb-table th.num { text-align: center; }
-
-  .lb-table td {
-    padding: 11px 12px;
-    border-bottom: 1px solid rgba(201,168,76,0.1);
-    vertical-align: middle;
-    color: var(--cream);
-  }
-
-  .lb-table td.num { text-align: center; font-family: 'DM Mono', monospace; }
-
-  .lb-table tr:hover td { background: rgba(201,168,76,0.05); }
-  .lb-table tbody tr:active td { background: rgba(201,168,76,0.08); }
-
-  .lb-table tr.leader td { background: rgba(201,168,76,0.08); }
-  .lb-table tr.leader td:first-child { border-left: 3px solid var(--gold); }
-
-  .rank-badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 24px; height: 24px;
-    border-radius: 50%;
-    font-family: 'DM Mono', monospace;
-    font-size: 0.7rem;
-    font-weight: 500;
-    background: rgba(201,168,76,0.15);
-    color: var(--gold-light);
-  }
-
-  .rank-badge.gold { background: var(--gold); color: var(--green-deep); }
-
-  .player-name {
-    font-weight: 700;
-    color: var(--cream);
-    font-size: 0.9rem;
-  }
-
-  .golfer-pills {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-    margin-top: 4px;
-  }
-
-  .golfer-pill {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.6rem;
-    padding: 3px 8px;
-    border-radius: 10px;
-    border: 1px solid var(--border);
-    color: var(--gold-light);
-    background: rgba(201,168,76,0.07);
-    white-space: nowrap;
-    -webkit-tap-highlight-color: rgba(201,168,76,0.2);
-    user-select: none;
-  }
-  .golfer-pill:active { background: rgba(201,168,76,0.2); }
-
-  .golfer-pill.missed-cut {
-    border-color: rgba(139,32,32,0.4);
-    color: rgba(192,57,43,0.8);
-    background: rgba(139,32,32,0.1);
-    text-decoration: line-through;
-  }
-
-  .golfer-pill.withdrawn {
-    border-color: rgba(100,100,100,0.4);
-    color: rgba(150,150,150,0.8);
-    background: rgba(100,100,100,0.1);
-    text-decoration: line-through;
-  }
-
-  .golfer-pill.winner {
-    border-color: var(--gold);
-    color: var(--gold);
-    background: rgba(201,168,76,0.15);
-  }
-
-  .golfer-pill.alternate {
-    border-style: dashed;
-    opacity: 0.7;
-  }
-
-  .score-val {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.9rem;
-    font-weight: 500;
-  }
-
-  .score-under { color: #4caf50; }
-  .score-over { color: var(--red-light); }
-  .score-even { color: var(--gold-light); }
-  .score-cut { color: rgba(150,150,150,0.6); font-size: 0.75rem; }
-
-  .missed-cut-badge {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.6rem;
-    padding: 1px 5px;
-    border-radius: 3px;
-    background: rgba(139,32,32,0.2);
-    color: rgba(192,57,43,0.9);
-    border: 1px solid rgba(139,32,32,0.3);
-    margin-left: 4px;
-  }
-
-  /* ── GOLFER LEADERBOARD ── */
-  .golfer-lb {
-    background: var(--green-mid);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    overflow: hidden;
-  }
-
-  .golfer-lb-header {
-    padding: 14px 18px;
-    background: rgba(0,0,0,0.2);
-    border-bottom: 1px solid var(--border);
-    font-family: 'DM Mono', monospace;
-    font-size: 0.65rem;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--gold);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  .golfer-row {
-    display: flex;
-    align-items: center;
-    padding: 10px 18px;
-    border-bottom: 1px solid rgba(201,168,76,0.08);
-    gap: 12px;
-    font-size: 0.82rem;
-    transition: background 0.15s;
-    min-height: 48px;
-  }
-  .golfer-row:active { background: rgba(201,168,76,0.1); }
-
-  .golfer-row:hover { background: rgba(201,168,76,0.04); }
-  .golfer-row:last-child { border-bottom: none; }
-
-  .golfer-pos {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.7rem;
-    width: 32px;
-    color: var(--gold-light);
-    opacity: 0.7;
-    flex-shrink: 0;
-  }
-
-  .golfer-name-cell {
-    flex: 1;
-    min-width: 0;
-  }
-
-  .golfer-name-main {
-    font-weight: 700;
-    color: var(--cream);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .golfer-owner {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.58rem;
-    color: var(--gold-light);
-    opacity: 0.6;
-    margin-top: 2px;
-  }
-
-  .golfer-score-cell {
-    text-align: right;
-    flex-shrink: 0;
-  }
-
-  .golfer-total {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.75rem;
-    color: var(--text-light);
-    color: rgba(200,200,200,0.5);
-    margin-top: 1px;
-  }
-
-  /* ── GRID LAYOUT ── */
-  .two-col {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 24px;
-    margin-bottom: 28px;
-  }
-
-
-
-  /* ── TEAM STANDINGS CARD ── */
-  .standings-card {
-    background: var(--green-mid);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    overflow: hidden;
-    margin-bottom: 28px;
-  }
-
-  .standings-card-header {
-    padding: 14px 18px;
-    background: rgba(0,0,0,0.2);
-    border-bottom: 1px solid var(--border);
-    font-family: 'DM Mono', monospace;
-    font-size: 0.65rem;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--gold);
-    display: flex;
-    justify-content: space-between;
-  }
-
-  /* ── ADMIN MODAL ── */
-  .modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.75);
-    z-index: 200;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-    backdrop-filter: blur(4px);
-  }
-
-  .modal {
-    background: var(--green-deep);
-    border: 1px solid var(--gold);
-    border-radius: 8px;
-    width: 100%;
-    max-width: 720px;
-    max-height: 90vh;
-    overflow-y: auto;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
-  }
-
-  .modal-header {
-    padding: 20px 24px;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  .modal-title {
-    font-family: 'Playfair Display', serif;
-    font-size: 1.1rem;
-    color: var(--gold);
-  }
-
-  .modal-close {
-    background: none;
-    border: none;
-    color: var(--gold-light);
-    font-size: 1.4rem;
-    cursor: pointer;
-    opacity: 0.7;
-    line-height: 1;
-    padding: 0 4px;
-  }
-  .modal-close:hover { opacity: 1; }
-
-  .modal-body { padding: 24px; }
-
-  .admin-section {
-    margin-bottom: 28px;
-  }
-
-  .admin-section h3 {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.68rem;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--gold);
-    margin-bottom: 14px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid var(--border);
-  }
-
-  .form-row {
-    display: flex;
-    gap: 12px;
-    margin-bottom: 10px;
-    align-items: center;
-    flex-wrap: wrap;
-  }
-
-  .form-group {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-    flex: 1;
-    min-width: 120px;
-  }
-
-  .form-group label {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.63rem;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--gold-light);
-    opacity: 0.8;
-  }
-
-  .form-group input, .form-group select {
-    background: rgba(255,255,255,0.05);
-    border: 1px solid var(--border);
-    border-radius: 3px;
-    padding: 8px 10px;
-    color: var(--cream);
-    font-family: 'Libre Baskerville', serif;
-    font-size: 0.82rem;
-    outline: none;
-    transition: border-color 0.2s;
-    width: 100%;
-  }
-
-  .form-group input:focus, .form-group select:focus {
-    border-color: var(--gold);
-  }
-
-  .form-group select option {
-    background: var(--green-deep);
-    color: var(--cream);
-  }
-
-  .player-roster-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 16px;
-  }
-
-  .player-roster-card {
-    background: rgba(255,255,255,0.03);
-    border: 1px solid var(--border);
-    border-radius: 5px;
-    padding: 14px;
-  }
-
-  .player-roster-name {
-    font-family: 'Playfair Display', serif;
-    font-size: 0.95rem;
-    color: var(--gold);
-    margin-bottom: 10px;
-    font-weight: 600;
-  }
-
-  .roster-inputs {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .roster-input-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .roster-slot-label {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.58rem;
-    text-transform: uppercase;
-    color: var(--gold-light);
-    opacity: 0.6;
-    width: 20px;
-    flex-shrink: 0;
-  }
-
-  .roster-input-row input {
-    flex: 1;
-    background: rgba(255,255,255,0.04);
-    border: 1px solid var(--border);
-    border-radius: 3px;
-    padding: 5px 8px;
-    color: var(--cream);
-    font-size: 0.78rem;
-    font-family: 'Libre Baskerville', serif;
-    outline: none;
-  }
-  .roster-input-row input:focus { border-color: var(--gold); }
-  .roster-input-row input.alt-input { border-style: dashed; opacity: 0.8; }
-
-  /* ── STATUS CONTROLS ── */
-  .status-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
-  .status-table th {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.6rem;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--gold);
-    opacity: 0.7;
-    padding: 7px 10px;
-    text-align: left;
-    border-bottom: 1px solid var(--border);
-  }
-  .status-table td {
-    padding: 8px 10px;
-    border-bottom: 1px solid rgba(201,168,76,0.08);
-    color: var(--cream);
-    vertical-align: middle;
-  }
-
-  .status-select {
-    background: rgba(255,255,255,0.05);
-    border: 1px solid var(--border);
-    border-radius: 3px;
-    padding: 4px 8px;
-    color: var(--cream);
-    font-family: 'DM Mono', monospace;
-    font-size: 0.68rem;
-    outline: none;
-    cursor: pointer;
-  }
-  .status-select:focus { border-color: var(--gold); }
-  .status-select option { background: var(--green-deep); }
-
-  /* ── PASSWORD ── */
-  .pw-gate {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 14px;
-    padding: 20px 0;
-  }
-
-  .pw-gate p {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.75rem;
-    color: var(--gold-light);
-    opacity: 0.8;
-    letter-spacing: 0.06em;
-  }
-
-  .pw-gate input {
-    background: rgba(255,255,255,0.06);
-    border: 1px solid var(--border);
-    border-radius: 3px;
-    padding: 10px 14px;
-    color: var(--cream);
-    font-family: 'DM Mono', monospace;
-    font-size: 0.85rem;
-    outline: none;
-    width: 220px;
-    text-align: center;
-  }
-  .pw-gate input:focus { border-color: var(--gold); }
-
-  .pw-error {
-    color: var(--red-light);
-    font-family: 'DM Mono', monospace;
-    font-size: 0.7rem;
-  }
-
-  /* ── TOAST ── */
-  .toast {
-    position: fixed;
-    bottom: 24px;
-    right: 24px;
-    background: var(--green-mid);
-    border: 1px solid var(--gold);
-    border-radius: 5px;
-    padding: 12px 18px;
-    font-family: 'DM Mono', monospace;
-    font-size: 0.75rem;
-    color: var(--gold-light);
-    z-index: 500;
-    opacity: 0;
-    transform: translateY(10px);
-    transition: all 0.3s;
-    pointer-events: none;
-  }
-  .toast.show { opacity: 1; transform: translateY(0); }
-
-  /* ── EMPTY STATE ── */
-  .empty-state {
-    text-align: center;
-    padding: 48px 24px;
-    opacity: 0.5;
-  }
-
-  .empty-state p {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.75rem;
-    letter-spacing: 0.08em;
-    color: var(--gold-light);
-  }
-
-  /* ── LOADING ── */
-  .loading-spinner {
-    display: inline-block;
-    width: 14px; height: 14px;
-    border: 2px solid rgba(201,168,76,0.2);
-    border-top-color: var(--gold);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-    vertical-align: middle;
-    margin-right: 6px;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  /* ── WINNER BANNER ── */
-  .winner-banner {
-    background: linear-gradient(135deg, rgba(201,168,76,0.2), rgba(201,168,76,0.05));
-    border: 1px solid var(--gold);
-    border-radius: 6px;
-    padding: 18px 24px;
-    margin-bottom: 20px;
-    display: flex;
-    align-items: center;
-    gap: 16px;
-  }
-
-  .winner-trophy { font-size: 2rem; }
-
-  .winner-text h3 {
-    font-family: 'Playfair Display', serif;
-    font-size: 1rem;
-    color: var(--gold);
-    margin-bottom: 2px;
-  }
-
-  .winner-text p {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.68rem;
-    color: var(--gold-light);
-    opacity: 0.8;
-  }
-
-  /* ── STANDINGS ACROSS MAJORS ── */
-  .overall-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.85rem;
-  }
-
-  .overall-table th {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.6rem;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--gold);
-    opacity: 0.7;
-    padding: 8px 12px;
-    text-align: center;
-    border-bottom: 1px solid var(--border);
-  }
-  .overall-table th:first-child { text-align: left; }
-
-  .overall-table td {
-    padding: 10px 12px;
-    border-bottom: 1px solid rgba(201,168,76,0.08);
-    text-align: center;
-    vertical-align: middle;
-    font-family: 'DM Mono', monospace;
-    font-size: 0.8rem;
-    color: var(--cream);
-  }
-  .overall-table td:first-child { text-align: left; font-family: 'Libre Baskerville', serif; font-weight: 700; }
-
-  .major-col-header {
-    font-size: 0.55rem !important;
-  }
-
-  .amount-positive { color: #4caf50; }
-  .amount-negative { color: var(--red-light); }
-
-  /* ── ROUND INDICATOR ── */
-  .round-badge {
-    display: inline-block;
-    font-family: 'DM Mono', monospace;
-    font-size: 0.62rem;
-    letter-spacing: 0.08em;
-    padding: 3px 8px;
-    border-radius: 10px;
-    text-transform: uppercase;
-  }
-  .round-upcoming { background: rgba(100,100,100,0.2); color: #aaa; border: 1px solid rgba(100,100,100,0.3); }
-  .round-live { background: rgba(76,175,80,0.15); color: #4caf50; border: 1px solid rgba(76,175,80,0.3); animation: pulse 2s infinite; }
-  .round-complete { background: rgba(201,168,76,0.1); color: var(--gold-light); border: 1px solid var(--border); }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.6} }
-
-  /* ── HISTORY TAB ── */
-  .history-major-block {
-    background: var(--green-mid);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    overflow: hidden;
-    margin-bottom: 24px;
-  }
-
-  .history-major-header {
-    padding: 18px 24px;
-    background: rgba(0,0,0,0.2);
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 12px;
-  }
-
-  .history-major-title {
-    font-family: 'Playfair Display', serif;
-    font-size: 1.1rem;
-    color: var(--gold);
-    font-weight: 700;
-  }
-
-  .history-major-meta {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.65rem;
-    color: var(--gold-light);
-    opacity: 0.7;
-    letter-spacing: 0.08em;
-  }
-
-  .history-winner-strip {
-    display: flex;
-    gap: 24px;
-    padding: 14px 24px;
-    border-bottom: 1px solid var(--border);
-    background: rgba(201,168,76,0.06);
-    flex-wrap: wrap;
-    align-items: center;
-  }
-
-  .history-winner-item {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-
-  .history-winner-label {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.58rem;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: var(--gold-light);
-    opacity: 0.6;
-  }
-
-  .history-winner-value {
-    font-family: 'Playfair Display', serif;
-    font-size: 0.95rem;
-    color: var(--gold);
-    font-weight: 600;
-  }
-
-  .history-roster-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 0;
-  }
-
-  .history-player-cell {
-    padding: 14px 20px;
-    border-right: 1px solid rgba(201,168,76,0.08);
-    border-bottom: 1px solid rgba(201,168,76,0.08);
-  }
-
-  .history-player-cell:nth-child(even) { border-right: none; }
-
-  .history-player-name {
-    font-weight: 700;
-    font-size: 0.88rem;
-    color: var(--cream);
-    margin-bottom: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  .history-player-banked {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.78rem;
-  }
-
-  .history-player-picks {
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-  }
-
-  .history-pick-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    font-size: 0.75rem;
-    padding: 2px 0;
-  }
-
-  .history-pick-name {
-    font-family: 'Libre Baskerville', serif;
-    color: var(--cream);
-    opacity: 0.85;
-  }
-
-  .history-pick-name.cut {
-    text-decoration: line-through;
-    opacity: 0.4;
-    color: var(--red-light);
-  }
-
-  .history-pick-name.winner-pick {
-    color: var(--gold);
-    font-weight: 700;
-  }
-
-  .history-pick-score {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.7rem;
-  }
-
-  .history-empty {
-    text-align: center;
-    padding: 64px 24px;
-  }
-
-  .history-empty-icon {
-    font-size: 2.5rem;
-    margin-bottom: 12px;
-    opacity: 0.4;
-  }
-
-  .history-empty-text {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.75rem;
-    color: var(--gold-light);
-    opacity: 0.5;
-    letter-spacing: 0.06em;
-  }
-
-  /* ── PLAYER CARD MODAL ── */
-  .player-modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.8);
-    z-index: 300;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-    backdrop-filter: blur(6px);
-  }
-
-  .player-modal {
-    background: var(--green-deep);
-    border: 1px solid var(--gold);
-    border-radius: 10px;
-    width: 100%;
-    max-width: 760px;
-    max-height: 88vh;
-    overflow-y: auto;
-    box-shadow: 0 24px 80px rgba(0,0,0,0.7);
-  }
-
-  .player-modal-header {
-    padding: 22px 26px 18px;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 16px;
-    position: sticky;
-    top: 0;
-    background: var(--green-deep);
-    z-index: 10;
-  }
-
-  .player-modal-name {
-    font-family: 'Playfair Display', serif;
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--gold);
-    line-height: 1.1;
-  }
-
-  .player-modal-meta {
-    display: flex;
-    gap: 14px;
-    margin-top: 6px;
-    flex-wrap: wrap;
-    align-items: center;
-  }
-
-  .player-modal-stat {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.72rem;
-    color: var(--gold-light);
-    opacity: 0.8;
-  }
-
-  .player-modal-stat strong {
-    color: var(--cream);
-    font-size: 0.85rem;
-  }
-
-  .player-modal-score-big {
-    font-family: 'Playfair Display', serif;
-    font-size: 2rem;
-    font-weight: 700;
-    line-height: 1;
-  }
-
-  .player-modal-close {
-    background: none;
-    border: none;
-    color: var(--gold-light);
-    font-size: 1.5rem;
-    cursor: pointer;
-    opacity: 0.6;
-    line-height: 1;
-    padding: 0 4px;
-    flex-shrink: 0;
-  }
-  .player-modal-close:hover { opacity: 1; }
-
-  .player-modal-body { padding: 20px 26px 26px; }
-
-  .scorecard-round {
-    margin-bottom: 22px;
-  }
-
-  .scorecard-round-title {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.65rem;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--gold);
-    opacity: 0.8;
-    margin-bottom: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  .scorecard-round-total {
-    font-size: 0.8rem;
-    opacity: 1;
-  }
-
-  .scorecard-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-family: 'DM Mono', monospace;
-    font-size: 0.72rem;
-    overflow: hidden;
-    border-radius: 4px;
-    border: 1px solid var(--border);
-  }
-
-  .scorecard-table th {
-    background: rgba(0,0,0,0.25);
-    color: var(--gold-light);
-    opacity: 0.7;
-    padding: 6px 8px;
-    text-align: center;
-    font-size: 0.6rem;
-    letter-spacing: 0.06em;
-    border-bottom: 1px solid var(--border);
-    border-right: 1px solid rgba(201,168,76,0.1);
-  }
-
-  .scorecard-table th:first-child { text-align: left; padding-left: 12px; }
-
-  .scorecard-table td {
-    padding: 7px 8px;
-    text-align: center;
-    border-right: 1px solid rgba(201,168,76,0.08);
-    color: var(--cream);
-    border-bottom: 1px solid rgba(201,168,76,0.06);
-  }
-
-  .scorecard-table td:first-child { text-align: left; padding-left: 12px; color: var(--gold-light); opacity: 0.7; }
-
-  .scorecard-table tr:last-child td { border-bottom: none; }
-
-  .score-birdie { color: #4caf50; font-weight: 700; }
-  .score-eagle  { color: #00e5ff; font-weight: 700; }
-  .score-bogey  { color: #ef5350; }
-  .score-double { color: #b71c1c; font-weight: 700; }
-  .score-par    { color: var(--cream); opacity: 0.7; }
-  .score-hole-E { color: var(--gold-light); }
-
-  .scorecard-half-divider td {
-    border-left: 2px solid var(--border);
-    font-weight: 700;
-    color: var(--gold-light) !important;
-    opacity: 1 !important;
-    background: rgba(0,0,0,0.1);
-  }
-
-  .player-card-owner-badge {
-    display: inline-block;
-    font-family: 'DM Mono', monospace;
-    font-size: 0.6rem;
-    padding: 3px 8px;
-    border-radius: 10px;
-    background: rgba(201,168,76,0.12);
-    border: 1px solid var(--border);
-    color: var(--gold-light);
-    letter-spacing: 0.06em;
-  }
-
-  .player-card-loading {
-    text-align: center;
-    padding: 48px 24px;
-    font-family: 'DM Mono', monospace;
-    font-size: 0.75rem;
-    color: var(--gold-light);
-    opacity: 0.6;
-  }
-
-  .scorecard-no-data {
-    text-align: center;
-    padding: 28px;
-    font-family: 'DM Mono', monospace;
-    font-size: 0.72rem;
-    color: rgba(200,200,200,0.3);
-  }
-
-  /* par indicators in header row */
-  .sc-par-row th { opacity: 0.45; font-size: 0.58rem; }
-
-
-
-
-  /* ══════════════════════════════════════════
-     RESPONSIVE — TABLET (≤900px)
-  ══════════════════════════════════════════ */
-  @media (max-width: 900px) {
-    .two-col { grid-template-columns: 1fr; }
-    .player-roster-grid { grid-template-columns: 1fr 1fr; }
-    .overall-table { font-size: 0.72rem; }
-    .overall-table th, .overall-table td { padding: 8px 8px; }
-  }
-
-  /* ══════════════════════════════════════════
-     RESPONSIVE — MOBILE (≤768px)
-  ══════════════════════════════════════════ */
-  @media (max-width: 768px) {
-
-    /* Header */
-    .header-inner {
-      flex-direction: row;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 8px;
-      padding: 10px 14px;
-    }
-    .site-title { font-size: 1.2rem; }
-    .site-subtitle { font-size: 0.6rem; }
-    .header-right { gap: 8px; }
-    .sync-status span { display: none; } /* hide "Live" text, keep dot */
-
-    /* Major tabs — horizontally scrollable */
-    .tabs-inner { gap: 0; padding: 0 10px; }
-    .tab { font-size: 0.62rem; padding: 10px 12px; letter-spacing: 0.06em; }
-    .tab .tab-year { font-size: 0.52rem; }
-
-    /* Main padding */
-    .main { padding: 16px 12px; }
-
-    /* Major hero */
-    .major-hero {
-      flex-direction: column;
-      align-items: flex-start;
-      padding: 18px 16px;
-      gap: 14px;
-    }
-    .major-info h2 { font-size: 1.3rem; }
-    .major-info .major-meta { font-size: 0.68rem; }
-    .pot-display { text-align: left; }
-    .pot-amount { font-size: 1.8rem; }
-
-    /* Winner banners */
-    .winner-banner { padding: 14px 16px; gap: 12px; }
-    .winner-trophy { font-size: 1.5rem; }
-    .winner-text h3 { font-size: 0.9rem; }
-    .winner-text p { font-size: 0.65rem; }
-
-    /* Section headers */
-    .section-title { font-size: 0.95rem; }
-
-    /* Team standings table — hide Cuts/Pot Add cols, show inline */
-    .lb-table th, .lb-table td { padding: 9px 8px; }
-    .lb-table th:nth-child(4),
-    .lb-table td:nth-child(4),
-    .lb-table th:nth-child(5),
-    .lb-table td:nth-child(5) { display: none; }
-    .player-name { font-size: 0.82rem; }
-    .golfer-pill { font-size: 0.55rem; padding: 2px 5px; }
-
-    /* Golfer leaderboard rows */
-    .golfer-row { padding: 9px 12px; gap: 8px; }
-    .golfer-name-main { font-size: 0.82rem; }
-    .golfer-owner { font-size: 0.55rem; }
-
-    /* Overall standings table */
-    .standings-card { overflow-x: auto; }
-    .overall-table { font-size: 0.68rem; min-width: 480px; }
-    .overall-table th, .overall-table td { padding: 7px 7px; }
-    .major-col-header { font-size: 0.5rem !important; }
-
-    /* Make standings card scrollable horizontally */
-    .standings-card-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-
-    /* Two-col grids collapse */
-    .two-col { grid-template-columns: 1fr; gap: 16px; }
-
-    /* History grid */
-    .history-roster-grid { grid-template-columns: 1fr 1fr; }
-    .history-player-cell { padding: 10px 12px; }
-    .history-winner-strip { padding: 12px 16px; gap: 16px; }
-    .history-major-header { padding: 14px 16px; }
-
-    /* Admin modal */
-    .modal { max-width: 100%; margin: 10px; border-radius: 8px; }
-    .modal-body { padding: 16px; }
-    .player-roster-grid { grid-template-columns: 1fr; }
-    .form-row { flex-direction: column; gap: 10px; }
-
-    /* Dividers */
-    .divider { margin: 20px 0; }
-  }
-
-  /* ══════════════════════════════════════════
-     RESPONSIVE — SMALL MOBILE (≤480px)
-  ══════════════════════════════════════════ */
-  @media (max-width: 480px) {
-    .main { padding: 12px 10px; }
-
-    /* Header tighter */
-    .site-title { font-size: 1.05rem; }
-    .btn-sm { padding: 5px 8px; font-size: 0.62rem; }
-
-    /* Major hero */
-    .major-info h2 { font-size: 1.15rem; }
-    .pot-amount { font-size: 1.5rem; }
-
-    /* Hide score column label on very small screens, keep value */
-    .lb-table th:nth-child(3) { font-size: 0.55rem; }
-
-    /* Golfer pills wrap tightly */
-    .golfer-pills { gap: 3px; }
-    .golfer-pill { font-size: 0.5rem; padding: 1px 4px; }
-
-    /* History grid single column */
-    .history-roster-grid { grid-template-columns: 1fr; }
-    .history-player-cell { border-right: none; }
-
-    /* Scorecard table horizontal scroll */
-    .scorecard-round { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    .scorecard-table { min-width: 520px; font-size: 0.6rem; }
-    .scorecard-table td, .scorecard-table th { padding: 5px 5px; }
-
-    /* Player modal full screen on tiny devices */
-    .player-modal-overlay { padding: 0; align-items: flex-end; }
-    .player-modal {
-      max-width: 100%;
-      max-height: 92vh;
-      border-radius: 12px 12px 0 0;
-      border-bottom: none;
-    }
-    .player-modal-header { padding: 16px 16px 12px; }
-    .player-modal-name { font-size: 1.1rem; }
-    .player-modal-score-big { font-size: 1.5rem; }
-    .player-modal-body { padding: 14px 16px 24px; }
-
-    /* Overall season standings scrollable */
-    .season-standings-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-
-    /* Pot breakdown wraps */
-    .pot-breakdown { font-size: 0.6rem; }
-
-    /* Round summary strip in player card */
-    .summary-strip { gap: 10px; }
-
-    /* Admin roster grid single col */
-    .player-roster-grid { grid-template-columns: 1fr; }
-
-    /* Status table font */
-    .status-table { font-size: 0.75rem; }
-    .status-table th, .status-table td { padding: 6px 8px; }
-  }
-
-
-  /* ── AUTOCOMPLETE ── */
-  .autocomplete-wrap {
-    position: relative;
-    flex: 1;
-  }
-
-  .autocomplete-dropdown {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    background: var(--green-deep);
-    border: 1px solid var(--gold);
-    border-top: none;
-    border-radius: 0 0 4px 4px;
-    max-height: 180px;
-    overflow-y: auto;
-    z-index: 400;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-  }
-
-  .autocomplete-item {
-    padding: 8px 12px;
-    font-family: 'Libre Baskerville', serif;
-    font-size: 0.8rem;
-    color: var(--cream);
-    cursor: pointer;
-    border-bottom: 1px solid rgba(201,168,76,0.08);
-    transition: background 0.1s;
-  }
-
-  .autocomplete-item:last-child { border-bottom: none; }
-  .autocomplete-item:hover, .autocomplete-item.selected {
-    background: rgba(201,168,76,0.15);
-    color: var(--gold);
-  }
-
-  .autocomplete-item em {
-    font-style: normal;
-    color: var(--gold);
-    font-weight: 700;
-  }
-
-  .autocomplete-loading {
-    padding: 10px 12px;
-    font-family: 'DM Mono', monospace;
-    font-size: 0.65rem;
-    color: var(--gold-light);
-    opacity: 0.6;
-  }
-
-
-  /* ── TEAM CARDS ── */
-  .team-cards-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    gap: 14px;
-    margin-bottom: 28px;
-  }
-
-  .team-card {
-    background: var(--green-mid);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    overflow: hidden;
-    transition: border-color 0.2s;
-  }
-
-  .team-card-leader {
-    border-color: var(--gold);
-    box-shadow: 0 0 0 1px rgba(201,168,76,0.2);
-  }
-
-  .tc-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 12px 16px;
-    background: rgba(0,0,0,0.2);
-    border-bottom: 1px solid var(--border);
-  }
-
-  .tc-rank-name {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .tc-rank {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 22px; height: 22px;
-    border-radius: 50%;
-    font-family: 'DM Mono', monospace;
-    font-size: 0.68rem;
-    background: rgba(201,168,76,0.12);
-    color: var(--gold-light);
-    flex-shrink: 0;
-  }
-
-  .tc-rank-gold {
-    background: var(--gold);
-    color: var(--green-deep);
-    font-weight: 700;
-  }
-
-  .tc-name {
-    font-family: 'Playfair Display', serif;
-    font-size: 1rem;
-    font-weight: 700;
-    color: var(--cream);
-  }
-
-  .tc-total {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .tc-score {
-    font-family: 'DM Mono', monospace;
-    font-size: 1rem;
-    font-weight: 700;
-  }
-
-  .tc-score-dash {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.85rem;
-    color: rgba(200,200,200,0.3);
-  }
-
-  .tc-penalty {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.62rem;
-    color: var(--red-light);
-    background: rgba(139,32,32,0.15);
-    border: 1px solid rgba(139,32,32,0.3);
-    border-radius: 4px;
-    padding: 2px 5px;
-  }
-
-  .tc-golfers {
-    padding: 8px 12px 12px;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  /* ── GOLFER ROW INSIDE CARD ── */
-  .golfer-card {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 7px 10px;
-    border-radius: 5px;
-    background: rgba(255,255,255,0.03);
-    border: 1px solid transparent;
-    cursor: pointer;
-    transition: background 0.15s, border-color 0.15s;
-    gap: 8px;
-  }
-
-  .golfer-card:hover { background: rgba(201,168,76,0.08); border-color: var(--border); }
-  .golfer-card:active { background: rgba(201,168,76,0.14); }
-
-  .golfer-card.gc-cut { opacity: 0.5; }
-  .golfer-card.gc-wd  { opacity: 0.35; }
-  .golfer-card.gc-alt { opacity: 0.55; border-style: dashed; }
-
-  .gc-name-row {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    min-width: 0;
-    flex: 1;
-    overflow: hidden;
-  }
-
-  .gc-name {
-    font-size: 0.82rem;
-    font-family: 'Libre Baskerville', serif;
-    color: var(--cream);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .gc-tag {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.55rem;
-    letter-spacing: 0.06em;
-    padding: 1px 5px;
-    border-radius: 3px;
-    flex-shrink: 0;
-  }
-
-  .gc-tag-cut { background: rgba(139,32,32,0.2); color: var(--red-light); border: 1px solid rgba(139,32,32,0.3); }
-  .gc-tag-wd  { background: rgba(100,100,100,0.2); color: #aaa; border: 1px solid rgba(100,100,100,0.3); }
-  .gc-tag-win { font-size: 0.7rem; }
-  .gc-tag-alt { background: rgba(201,168,76,0.1); color: var(--gold-light); border: 1px solid var(--border); }
-
-  .gc-scores {
-    display: grid;
-    grid-template-columns: repeat(4, 28px) 34px;
-    gap: 2px;
-    flex-shrink: 0;
-    align-items: center;
-  }
-
-  .gc-round {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.68rem;
-    text-align: center;
-    padding: 3px 2px;
-    border-radius: 3px;
-    background: rgba(0,0,0,0.15);
-  }
-
-  .gc-round-empty { color: rgba(200,200,200,0.2); background: transparent; }
-
-  .gc-total {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.75rem;
-    font-weight: 700;
-    text-align: center;
-    padding: 3px 4px;
-    border-radius: 3px;
-    background: rgba(0,0,0,0.2);
-    border-left: 1px solid rgba(201,168,76,0.15);
-  }
-
-  /* Column header row inside team card */
-  .tc-col-headers {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 4px 10px 2px;
-    margin-bottom: 2px;
-  }
-
-  .tc-col-left {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.55rem;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--gold-light);
-    opacity: 0.4;
-    flex: 1;
-  }
-
-  .tc-col-rounds {
-    display: grid;
-    grid-template-columns: repeat(4, 28px) 34px;
-    gap: 2px;
-    flex-shrink: 0;
-  }
-
-  .tc-col-rounds span {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.52rem;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--gold-light);
-    opacity: 0.4;
-    text-align: center;
-  }
-
-  @media (max-width: 768px) {
-    .team-cards-grid { grid-template-columns: 1fr; gap: 10px; }
-    .gc-name { font-size: 0.78rem; }
-    .gc-round { font-size: 0.62rem; }
-  }
-
-
-  /* ── PAYOUT CARD ── */
-  .payout-card {
-    background: var(--green-mid);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    overflow: hidden;
-    margin-bottom: 28px;
-  }
-
-  .payout-pot-row {
-    display: flex;
-    gap: 0;
-    flex-wrap: wrap;
-  }
-
-  .payout-pot-item {
-    flex: 1;
-    min-width: 100px;
-    padding: 14px 18px;
-    border-right: 1px solid var(--border);
-    border-bottom: 1px solid var(--border);
-  }
-  .payout-pot-item:last-child { border-right: none; }
-
-  .payout-pot-label {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.58rem;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: var(--gold-light);
-    opacity: 0.6;
-    margin-bottom: 4px;
-  }
-
-  .payout-pot-val {
-    font-family: 'Playfair Display', serif;
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: var(--gold);
-  }
-
-  .payout-divider {
-    height: 1px;
-    background: var(--border);
-  }
-
-  .payout-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 11px 18px;
-    border-bottom: 1px solid rgba(201,168,76,0.06);
-    font-size: 0.82rem;
-  }
-  .payout-row:last-child { border-bottom: none; }
-  .payout-winner { background: rgba(201,168,76,0.05); }
-
-  .payout-label {
-    font-weight: 700;
-    color: var(--cream);
-    min-width: 80px;
-  }
-
-  .payout-detail {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.65rem;
-    color: var(--gold-light);
-    opacity: 0.6;
-    flex: 1;
-  }
-
-  .payout-amount {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.82rem;
-    font-weight: 700;
-    flex-shrink: 0;
-  }
-
-  .payout-pos { color: #4caf50; }
-  .payout-neg { color: var(--red-light); }
-
-  .payout-empty {
-    padding: 20px 18px;
-    font-family: 'DM Mono', monospace;
-    font-size: 0.68rem;
-    color: rgba(200,200,200,0.3);
-    letter-spacing: 0.04em;
-  }
-
-  /* ── STANDINGS TAB ── */
-  .standings-hero {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
-    gap: 12px;
-  }
-
-  .year-tabs {
-    display: flex;
-    gap: 6px;
-  }
-
-  .year-tab {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.72rem;
-    padding: 6px 14px;
-    border-radius: 4px;
-    border: 1px solid var(--border);
-    background: transparent;
-    color: var(--gold-light);
-    cursor: pointer;
-    transition: all 0.15s;
-    letter-spacing: 0.06em;
-  }
-
-  .year-tab:hover { border-color: var(--gold); color: var(--gold); }
-  .year-tab.active { background: var(--gold); color: var(--green-deep); border-color: var(--gold); font-weight: 700; }
-
-
-  .gc-tee-time {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.55rem;
-    color: var(--gold-light);
-    opacity: 0.6;
-    margin-top: 2px;
-    letter-spacing: 0.04em;
-  }
-
-
-  /* ── PLAYER PROFILE CARD ── */
-  .pm-profile-card {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px 16px;
-    background: rgba(0,0,0,0.15);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 14px 16px;
-    margin-bottom: 4px;
-  }
-
-  .pm-profile-item {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-
-  .pm-profile-label {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.58rem;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: var(--gold-light);
-    opacity: 0.6;
-  }
-
-  .pm-profile-val {
-    font-family: 'Libre Baskerville', serif;
-    font-size: 0.82rem;
-    color: var(--cream);
-  }
-
-  @media (max-width: 480px) {
-    .pm-profile-card { grid-template-columns: 1fr; }
-  }
-
-
-</style>
-</head>
-<body>
-
-<header class="site-header">
-  <div class="header-inner">
-    <div>
-      <div class="site-title">⛳ Franktown Golf Majors</div>
-      <div class="site-subtitle">Draft League · 2026</div>
-    </div>
-    <div class="header-right">
-      <div class="sync-status">
-        <div class="sync-dot" id="syncDot" title="JSONBin sync"></div>
-        <span id="syncLabel" style="display:none"></span>
-        <div class="sync-dot" id="espnDot" title="ESPN scores"></div>
-        <span style="font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--gold-light);opacity:0.6" id="syncLabels">connecting…</span>
+<div class="player-modal-overlay" id="playerModal" style="display:none" onclick="if(event.target===this)closePlayerModal()">
+  <div class="player-modal">
+    <div class="player-modal-header">
+      <div>
+        <div class="player-modal-name" id="pmName">–</div>
+        <div class="player-modal-meta" id="pmMeta"></div>
       </div>
-      <button class="btn btn-outline btn-sm" id="refreshBtn" onclick="syncPull()">↻ Refresh</button>
-      <button class="btn btn-gold btn-sm" onclick="openAdmin()">Admin</button>
+      <div style="display:flex;align-items:center;gap:16px;flex-shrink:0">
+        <div id="pmScoreBig" class="player-modal-score-big"></div>
+        <button class="player-modal-close" onclick="closePlayerModal()">×</button>
+      </div>
+    </div>
+    <div class="player-modal-body" id="pmBody">
+      <div class="player-card-loading"><span class="loading-spinner"></span> Loading scorecard…</div>
     </div>
   </div>
-</header>
+</div>
 
-<nav class="major-tabs">
-  <div class="tabs-inner" id="majorTabs"></div>
-</nav>
-
-<main class="main" id="mainContent">
-  <div class="empty-state" id="loadingState"><p><span class="loading-spinner"></span>Loading…</p></div>
-</main>
-
-<div class="toast" id="toast"></div>
-
-
-<!-- PLAYER CARD MODAL -->
-
+<!-- ADMIN MODAL -->
+<div class="modal-overlay" id="adminModal" style="display:none" onclick="if(event.target===this&&adminUnlocked)closeAdmin()">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Admin Panel</span>
+      <button class="modal-close" onclick="closeAdmin()">×</button>
+    </div>
+    <div class="modal-body" id="adminBody">
+      <div class="pw-gate" id="pwGate">
+        <p>Enter admin password</p>
+        <input type="password" id="pwInput" placeholder="••••••••" onkeydown="if(event.key==='Enter')checkPw()">
+        <button class="btn btn-gold" onclick="checkPw()">Unlock</button>
+        <span class="pw-error" id="pwError"></span>
+      </div>
+    </div>
+  </div>
+</div>
 
 <script>
 // ══════════════════════════════════════════
@@ -4284,7 +2461,7 @@ function renderAltCard(alt) {
     + flag
     + '<span class="gc-name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + alt + '</span>'
     + '<span class="gc-tag gc-tag-alt">ALT</span>'
-    + '</div>' + teeTime + (thruAlt ? '<div class="gc-tee-time" style="color:var(--gold-light);opacity:0.7">' + thruAlt + '</div>' : '') + '</div></div>'
+    + '</div>' + teeTime + '</div></div>'
     + '<div class="gc-scores">' + roundCells
     + '<span class="gc-total ' + totCls + '" style="opacity:0.7">' + (totStr || '–') + '</span>'
     + '</div></div>';
@@ -4447,18 +2624,8 @@ function renderMain(preserveScroll = false) {
             }).join('') : '<span class="gc-round gc-round-empty" style="grid-column:span 4">–</span>';
 
             const teeTimeStr = espnG?.teeTime || '';
-            // Thru / hole status
-            const thruDisp = (() => {
-              if (!live || !espnG) return '';
-              const t = espnG.thru;
-              const sd = espnG.raw?.status?.type?.shortDetail || '';
-              if (sd === 'F' || sd === 'F*') return 'F';
-              if (t === '' || t === '0' || t === 0) return '';
-              return 'Thru ' + t;
-            })();
-
             return `
-              <div class="golfer-card${isCut ? ' gc-cut' : isWD ? ' gc-wd' : ''}">
+              <div class="golfer-card${isCut ? ' gc-cut' : isWD ? ' gc-wd' : ''}" onclick="openPlayerModal('${g.replace(/'/g, "\'")}')">
                 <div class="gc-name-row">
                   <div style="min-width:0;overflow:hidden">
                     <div style="display:flex;align-items:center;gap:4px;flex-wrap:nowrap;min-width:0">
@@ -4466,8 +2633,7 @@ function renderMain(preserveScroll = false) {
                       <span class="gc-name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${g}</span>
                       ${statusTag}
                     </div>
-                    ${teeTimeStr && isTournamentWeek(activeMajorId) && (!espnG?.thru || espnG.thru === '' || espnG.thru === '0') ? `<div class="gc-tee-time">⏰ ${teeTimeStr}</div>` : ''}
-                    ${thruDisp ? `<div class="gc-tee-time" style="color:var(--gold-light);opacity:0.7">${thruDisp}</div>` : ''}
+                    ${teeTimeStr && !live && isTournamentWeek(activeMajorId) ? `<div class="gc-tee-time">⏰ ${teeTimeStr}</div>` : ''}
                   </div>
                 </div>
                 <div class="gc-scores">
@@ -4957,16 +3123,310 @@ const HOLE_PARS = {
   theopen2026:  [4,4,4,3,4,5,3,4,4, 4,3,4,4,3,5,4,4,5], // Royal Portrush approx
 };
 
-// openPlayerModal removed
+async function openPlayerModal(golferName) {
+  const modal = document.getElementById('playerModal');
+  const pmName = document.getElementById('pmName');
+  const pmMeta = document.getElementById('pmMeta');
+  const pmScoreBig = document.getElementById('pmScoreBig');
+  const pmBody = document.getElementById('pmBody');
 
-// closePlayerModal removed
+  // Find owner
+  const mData = state?.majors?.[activeMajorId];
+  const owner = mData ? PLAYERS.find(p =>
+    mData.rosters[p]?.picks?.includes(golferName) ||
+    mData.rosters[p]?.alternate === golferName
+  ) : null;
 
-// loadPlayerScorecard removed
+  const espnG = isTournamentLive(activeMajorId) ? getGolferScore(activeMajorId, golferName) : null;
+  const score = espnG?.score || '–';
+  const scoreCls = score.startsWith('-') ? 'score-under' : score.startsWith('+') ? 'score-over' : score === 'E' ? 'score-even' : '';
+
+  // For tee time + headshot, fetch from raw ESPN
+  const espnGRaw = getGolferScore(activeMajorId, golferName);
+  const teeTime = espnGRaw?.teeTime || null;
+  const headshotUrl = espnGRaw?.headshot || '';
+
+  if (headshotUrl) {
+    pmName.innerHTML = `<img src="${headshotUrl}" alt="${golferName}"
+      style="width:52px;height:52px;border-radius:50%;object-fit:cover;border:2px solid var(--gold);margin-right:12px;vertical-align:middle;flex-shrink:0"
+      onerror="this.style.display='none'">${golferName}`;
+    pmName.style.cssText = 'display:flex;align-items:center';
+  } else {
+    pmName.textContent = golferName;
+    pmName.style.cssText = '';
+  }
+  pmScoreBig.innerHTML = espnG ? `<span class="${scoreCls}">${score}</span>` : '';
+
+  const country = espnGRaw?.country || '';
+  const flagUrl = espnGRaw?.flagUrl || '';
+
+  pmMeta.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px">
+      ${flagUrl ? `<img src="${flagUrl}" alt="${country}" style="width:24px;height:16px;object-fit:cover;border-radius:2px;border:1px solid rgba(201,168,76,0.2)" onerror="this.style.display='none'">` : ''}
+      ${country ? `<span class="player-modal-stat"><strong>${country}</strong></span>` : ''}
+      ${owner ? `<span class="player-card-owner-badge">Drafted by ${owner}</span>` : ''}
+    </div>
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+      ${espnG?.pos ? `<span class="player-modal-stat">Position: <strong>${espnG.pos}</strong></span>` : ''}
+      ${espnG?.thru && isTournamentLive(activeMajorId) ? `<span class="player-modal-stat">Thru: <strong>${espnG.thru}</strong></span>` : ''}
+      ${teeTime && isTournamentWeek(activeMajorId) ? `<span class="player-modal-stat">⏰ <strong>${teeTime}</strong></span>` : ''}
+    </div>
+  `;
+  pmBody.innerHTML = '<div class="player-card-loading"><span class="loading-spinner"></span> Loading scorecard…</div>';
+  modal.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+
+  // Fetch detailed scorecard from ESPN
+  loadPlayerScorecard(golferName);
+}
+
+function closePlayerModal() {
+  document.getElementById('playerModal').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+async function loadPlayerScorecard(golferName) {
+  const cached = getGolferScore(activeMajorId, golferName);
+  const competitor = cached?.raw || null;
+  const athleteId = competitor?.athlete?.id;
+
+  // Try ESPN's scorecard endpoint for hole-by-hole data
+  if (athleteId && isTournamentLive(activeMajorId)) {
+    try {
+      const url = `https://site.api.espn.com/apis/site/v2/sports/golf/athletes/${athleteId}/scorecards?event=${MAJORS.find(m=>m.id===activeMajorId)?.espnId}`;
+      const r = await fetch(url);
+      if (r.ok) {
+        const j = await r.json();
+        renderPlayerScorecardHoles(j, competitor, golferName);
+        return;
+      }
+    } catch(e) { /* fall through to round summary */ }
+  }
+
+  // Fallback: round-by-round summary from leaderboard data
+  renderPlayerScorecard(competitor, golferName, null);
+}
 
 
-// renderPlayerScorecardHoles removed
+function renderPlayerScorecardHoles(scorecardData, competitor, golferName) {
+  const pmBody = document.getElementById('pmBody');
+  if (!pmBody) return;
+  const pars = HOLE_PARS[activeMajorId] || Array(18).fill(4);
 
-// renderPlayerScorecard removed
+  // ESPN scorecard endpoint returns rounds array
+  const rounds = scorecardData?.rounds || scorecardData?.scores || [];
+  if (!rounds.length) {
+    renderPlayerScorecard(competitor, golferName, null);
+    return;
+  }
+
+  let html = '';
+  rounds.forEach((round, ri) => {
+    const holes = round.holes || round.linescores || [];
+    if (!holes.length) return;
+    const roundLabel = ['Round 1','Round 2','Round 3','Round 4'][ri] || `Round ${ri+1}`;
+    const completedHoles = holes.filter(h => h.score !== undefined && h.score !== null);
+    const roundStrokes = completedHoles.reduce((s,h) => s + (parseInt(h.score||h.value)||0), 0);
+    const roundPar = pars.slice(0, completedHoles.length).reduce((a,b)=>a+b,0);
+    const roundToPar = completedHoles.length > 0 ? roundStrokes - roundPar : 0;
+    const roundToParStr = roundToPar === 0 ? 'E' : (roundToPar > 0 ? '+'+roundToPar : ''+roundToPar);
+    const roundToParCls = roundToPar < 0 ? 'score-under' : roundToPar > 0 ? 'score-over' : 'score-even';
+    const front = holes.slice(0,9);
+    const back = holes.slice(9,18);
+    const frontStrokes = front.reduce((s,h)=>s+(parseInt(h.score||h.value)||0),0);
+    const backStrokes = back.reduce((s,h)=>s+(parseInt(h.score||h.value)||0),0);
+
+    html += `<div class="scorecard-round">
+      <div class="scorecard-round-title">
+        <span>${roundLabel}${completedHoles.length < 18 ? ` (In Progress · Hole ${completedHoles.length})` : ''}</span>
+        <span class="scorecard-round-total ${roundToParCls}">${roundToParStr} &nbsp;(${roundStrokes} strokes)</span>
+      </div>
+      <table class="scorecard-table">
+        <thead>
+          <tr>
+            <th>Hole</th>
+            ${[1,2,3,4,5,6,7,8,9].map(h=>`<th>${h}</th>`).join('')}
+            <th style="background:rgba(0,0,0,0.15);border-left:2px solid var(--border)">OUT</th>
+            ${back.length ? [10,11,12,13,14,15,16,17,18].slice(0,back.length).map(h=>`<th>${h}</th>`).join('') : ''}
+            ${back.length ? `<th style="background:rgba(0,0,0,0.15);border-left:2px solid var(--border)">IN</th><th style="background:rgba(0,0,0,0.15)">TOT</th>` : ''}
+          </tr>
+          <tr class="sc-par-row">
+            <th>Par</th>
+            ${pars.slice(0,9).map(p=>`<th>${p}</th>`).join('')}
+            <th style="background:rgba(0,0,0,0.15);border-left:2px solid var(--border)">${pars.slice(0,9).reduce((a,b)=>a+b,0)}</th>
+            ${back.length ? pars.slice(9,9+back.length).map(p=>`<th>${p}</th>`).join('') : ''}
+            ${back.length ? `<th style="background:rgba(0,0,0,0.15);border-left:2px solid var(--border)">${pars.slice(9,18).reduce((a,b)=>a+b,0)}</th><th style="background:rgba(0,0,0,0.15)">72</th>` : ''}
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>${golferName.split(' ').pop()}</td>
+            ${front.map((h,hi) => {
+              const strokes = parseInt(h.score||h.value)||0;
+              const par = pars[hi];
+              const diff = strokes - par;
+              const cls = diff<=-2?'score-eagle':diff===-1?'score-birdie':diff===1?'score-bogey':diff>=2?'score-double':'score-par';
+              return strokes ? `<td class="${cls}">${strokes}</td>` : '<td>–</td>';
+            }).join('')}
+            ${front.length < 9 ? Array(9-front.length).fill('<td>–</td>').join('') : ''}
+            <td style="border-left:2px solid var(--border);font-weight:700">${frontStrokes||'–'}</td>
+            ${back.map((h,hi) => {
+              const strokes = parseInt(h.score||h.value)||0;
+              const par = pars[9+hi];
+              const diff = strokes - par;
+              const cls = diff<=-2?'score-eagle':diff===-1?'score-birdie':diff===1?'score-bogey':diff>=2?'score-double':'score-par';
+              return strokes ? `<td class="${cls}">${strokes}</td>` : '<td>–</td>';
+            }).join('')}
+            ${back.length && back.length < 9 ? Array(9-back.length).fill('<td>–</td>').join('') : ''}
+            ${back.length ? `<td style="border-left:2px solid var(--border);font-weight:700">${backStrokes||'–'}</td><td style="font-weight:700">${roundStrokes||'–'}</td>` : ''}
+          </tr>
+        </tbody>
+      </table>
+    </div>`;
+  });
+
+  // Summary
+  const overallScore = competitor?.score?.displayValue || 'E';
+  const overallCls = overallScore.startsWith('-') ? 'score-under' : overallScore.startsWith('+') ? 'score-over' : 'score-even';
+  const totalStrokes = rounds.reduce((s,r) => s + (r.holes||r.linescores||[]).reduce((a,h)=>a+(parseInt(h.score||h.value)||0),0), 0);
+  html += `<div style="border-top:1px solid var(--border);padding-top:16px;margin-top:8px;display:flex;gap:20px;flex-wrap:wrap">
+    ${rounds.map((r,ri) => {
+      const holes = (r.holes||r.linescores||[]).filter(h=>h.score!==undefined&&h.score!==null);
+      const strokes = holes.reduce((s,h)=>s+(parseInt(h.score||h.value)||0),0);
+      const par = pars.slice(0,holes.length).reduce((a,b)=>a+b,0);
+      const tp = holes.length ? strokes-par : 0;
+      const tpStr = tp===0?'E':(tp>0?'+'+tp:''+tp);
+      const cls = tp<0?'score-under':tp>0?'score-over':'score-even';
+      return `<div style="text-align:center;min-width:52px">
+        <div style="font-family:'DM Mono',monospace;font-size:0.58rem;color:var(--gold-light);opacity:0.6;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px">R${ri+1}</div>
+        <div class="score-val ${cls}" style="font-size:1.1rem;font-weight:700">${tpStr}</div>
+        ${strokes ? `<div style="font-family:'DM Mono',monospace;font-size:0.6rem;color:rgba(200,200,200,0.4);margin-top:2px">${strokes}</div>` : ''}
+      </div>`;
+    }).join('')}
+    <div style="text-align:center;min-width:52px;border-left:1px solid var(--border);padding-left:20px">
+      <div style="font-family:'DM Mono',monospace;font-size:0.58rem;color:var(--gold-light);opacity:0.6;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px">Total</div>
+      <div class="score-val ${overallCls}" style="font-size:1.1rem;font-weight:700">${overallScore==='0'?'E':overallScore}</div>
+      ${totalStrokes ? `<div style="font-family:'DM Mono',monospace;font-size:0.6rem;color:rgba(200,200,200,0.4);margin-top:2px">${totalStrokes}</div>` : ''}
+    </div>
+  </div>`;
+
+  html += `<div style="margin-top:16px;display:flex;gap:14px;flex-wrap:wrap;font-family:'DM Mono',monospace;font-size:0.6rem;opacity:0.6">
+    <span class="score-eagle">■ Eagle or better</span>
+    <span class="score-birdie">■ Birdie</span>
+    <span class="score-par">■ Par</span>
+    <span class="score-bogey">■ Bogey</span>
+    <span class="score-double">■ Double+</span>
+  </div>`;
+
+  pmBody.innerHTML = html;
+}
+
+function renderPlayerScorecard(competitor, golferName, athleteProfile = null) {
+  if (!competitor) competitor = getGolferScore(activeMajorId, golferName)?.raw || null;
+  const pmBody = document.getElementById('pmBody');
+  if (!pmBody) return;
+
+  let html = '';
+
+  if (!isTournamentLive(activeMajorId)) {
+    html = '<div class="scorecard-no-data">⛳ Round scores will appear here once play begins on April 9</div>';
+    pmBody.innerHTML = html;
+    return;
+  }
+
+  if (!competitor) {
+    html = '<div class="scorecard-no-data">No scorecard data available</div>';
+    pmBody.innerHTML = html;
+    return;
+  }
+
+  // ESPN leaderboard API provides one linescore per ROUND (not per hole)
+  // value = strokes played so far in round, displayValue = to-par for round so far
+  const linescores = competitor.linescores || [];
+  const roundLabels = ['Round 1', 'Round 2', 'Round 3', 'Round 4'];
+
+  // ESPN linescores: one entry per round played
+  // Only show rounds that have actual strokes (value > 0)
+  const playedRounds = linescores.filter((ls, i) => i < 4 && (parseInt(ls.value) > 0 || String(ls.displayValue).trim() !== ''));
+
+  if (playedRounds.length === 0) {
+    html = '<div class="scorecard-no-data">No round data yet</div>';
+    pmBody.innerHTML = html;
+    return;
+  }
+
+  const thru = parseInt(competitor.status?.thru) || 0;
+  const shortDetail = competitor.status?.type?.shortDetail || '';
+  const tourneyComplete = shortDetail === 'F' || shortDetail === 'F*';
+
+  html += `
+    <table class="scorecard-table" style="width:100%;margin-bottom:20px">
+      <thead>
+        <tr>
+          <th style="text-align:left;padding-left:12px">Round</th>
+          <th>Score</th>
+          <th>Strokes</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+
+  let totalStrokes = 0;
+  playedRounds.forEach((ls, i) => {
+    const disp = String(ls.displayValue ?? '').trim();
+    const strokes = parseInt(ls.value) || 0;
+    const toPar = disp === 'E' ? 0 : (parseInt(disp) || 0);
+    const toParStr = toPar === 0 ? 'E' : (toPar > 0 ? '+' + toPar : String(toPar));
+    const cls = toPar < 0 ? 'score-under' : toPar > 0 ? 'score-over' : 'score-even';
+    totalStrokes += strokes;
+    const isCurrentRound = (i === playedRounds.length - 1);
+    // Status: last round = current status, earlier rounds = Final
+    let status;
+    if (!isCurrentRound) {
+      status = 'Final';
+    } else if (tourneyComplete) {
+      status = 'Final';
+    } else if (thru === 18) {
+      status = 'Final';
+    } else if (thru > 0) {
+      status = `Thru ${thru}`;
+    } else {
+      status = 'In Progress';
+    }
+
+    html += `
+      <tr>
+        <td style="text-align:left;padding-left:12px;font-family:'Libre Baskerville',serif">${roundLabels[i] || 'Round ' + (i+1)}</td>
+        <td class="num"><span class="score-val ${cls}">${toParStr}</span></td>
+        <td class="num" style="font-family:'DM Mono',monospace;font-size:0.8rem;color:rgba(200,200,200,0.6)">${strokes}</td>
+        <td class="num" style="font-family:'DM Mono',monospace;font-size:0.7rem;color:rgba(200,200,200,0.4)">${status}</td>
+      </tr>
+    `;
+  });
+
+  html += `</tbody></table>`;
+
+  // Overall summary — use ESPN's overall score directly
+  const overallScore = competitor.score?.displayValue || 'E';
+  const overallCls = overallScore.startsWith('-') ? 'score-under' : overallScore.startsWith('+') ? 'score-over' : 'score-even';
+  const pos = competitor.status?.position?.displayName || '';
+  html += `
+    <div style="border-top:1px solid var(--border);padding-top:16px;display:flex;gap:24px;flex-wrap:wrap">
+      <div style="text-align:center;min-width:60px">
+        <div style="font-family:'DM Mono',monospace;font-size:0.6rem;color:var(--gold-light);opacity:0.6;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px">Total</div>
+        <div class="score-val ${overallCls}" style="font-size:1.4rem;font-weight:700">${overallScore === '0' ? 'E' : overallScore}</div>
+        <div style="font-family:'DM Mono',monospace;font-size:0.6rem;color:rgba(200,200,200,0.4);margin-top:2px">${totalStrokes} strokes</div>
+      </div>
+      ${pos ? `<div style="text-align:center;min-width:60px">
+        <div style="font-family:'DM Mono',monospace;font-size:0.6rem;color:var(--gold-light);opacity:0.6;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px">Position</div>
+        <div style="font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:700;color:var(--cream)">${pos}</div>
+      </div>` : ''}
+    </div>
+  `;
+
+  pmBody.innerHTML = html;
+}
 
 
 
