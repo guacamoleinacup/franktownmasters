@@ -2606,18 +2606,17 @@ function renderMain(preserveScroll = false) {
             const activeRound = espnG?.raw?.linescores?.length
               ? Math.min(espnG.raw.linescores.length - 1, 3)
               : -1;
-            const sd = espnG?.raw?.status?.type?.shortDetail || '';
-            const thruRaw = espnG?.thru;
-            const isFinal = sd === 'F' || sd === 'F*';
+            const thruRaw = espnG?.thru || '';  // "7", "F", "0", ""
+            const isFinal = thruRaw === 'F';
 
             const roundCells = live ? [0,1,2,3].map(r => {
               if (rounds[r] === undefined) return `<span class="gc-round gc-round-empty">–</span>`;
               const cls = rounds[r] < 0 ? 'score-under' : rounds[r] > 0 ? 'score-over' : 'score-even';
               const isCurrent = r === activeRound && !isFinal;
-              const subText = isCurrent && thruRaw && thruRaw !== '0'
-                ? `<span class="gc-round-sub">H${thruRaw}</span>`
-                : isFinal && r === activeRound
+              const subText = isFinal && r === activeRound
                 ? `<span class="gc-round-sub" style="opacity:0.5">F</span>`
+                : isCurrent && thruRaw && thruRaw !== '0' && thruRaw !== 'F'
+                ? `<span class="gc-round-sub">H${thruRaw}</span>`
                 : '';
               return `<span class="gc-round ${cls}${isCurrent ? ' gc-round-active' : ''}">${rounds[r] === 0 ? 'E' : (rounds[r] > 0 ? '+' : '') + rounds[r]}${subText}</span>`;
             }).join('') : '<span class="gc-round gc-round-empty" style="grid-column:span 4">–</span>';
