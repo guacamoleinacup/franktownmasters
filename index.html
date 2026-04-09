@@ -2278,7 +2278,18 @@ function calcTeamScore(majorId, playerName) {
     // (owner pays $5 penalty separately, but score is kept)
     let toPar = null;
     if (espn) {
-      toPar = espn.toPar ?? 0;
+      // Sum round linescores for accurate total (ESPN's overall toPar can lag)
+      const ls = espn.raw?.linescores || [];
+      if (ls.length > 0) {
+        toPar = ls.slice(0, 4).reduce((sum, r) => {
+          const disp = String(r.displayValue ?? '').trim();
+          if (disp === 'E') return sum;
+          const n = parseInt(disp);
+          return sum + (isNaN(n) ? 0 : (Math.abs(n) > 20 ? n - 72 : n));
+        }, 0);
+      } else {
+        toPar = espn.toPar ?? 0;
+      }
       hasAny = true;
     }
     scorers.push({ name: g, status, score: toPar, espn });
