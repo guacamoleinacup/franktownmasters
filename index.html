@@ -2413,6 +2413,60 @@ function renderPayoutSummary(majorId) {
 // ══════════════════════════════════════════
 // RENDER MAIN
 // ══════════════════════════════════════════
+function renderAltCard(alt) {
+  const espn = getGolferScore(activeMajorId, alt);
+  const live = isTournamentLive(activeMajorId);
+  const week = isTournamentWeek(activeMajorId);
+  const ls = espn?.raw?.linescores?.slice(0,4) || [];
+  const thru = espn?.thru || '';
+
+  let roundCells = '';
+  if (live && ls.length > 0) {
+    roundCells = [0,1,2,3].map(r => {
+      if (r >= ls.length) return '<span class="gc-round gc-round-empty">–</span>';
+      const disp = String(ls[r].displayValue ?? '').trim();
+      const n = disp === 'E' ? 0 : parseInt(disp);
+      const tp = isNaN(n) ? null : (Math.abs(n) > 20 ? n - 72 : n);
+      if (tp === null) return '<span class="gc-round gc-round-empty">–</span>';
+      const cls = tp < 0 ? 'score-under' : tp > 0 ? 'score-over' : 'score-even';
+      return '<span class="gc-round ' + cls + '">' + (tp === 0 ? 'E' : (tp > 0 ? '+' : '') + tp) + '</span>';
+    }).join('');
+  } else {
+    roundCells = '<span class="gc-round gc-round-empty" style="grid-column:span 4">–</span>';
+  }
+
+  let totStr = null, totCls = '';
+  if (live && ls.length > 0) {
+    const sum = ls.reduce((s, r) => {
+      const d = String(r.displayValue ?? '').trim();
+      const n = d === 'E' ? 0 : parseInt(d);
+      return s + (isNaN(n) ? 0 : (Math.abs(n) > 20 ? n - 72 : n));
+    }, 0);
+    totStr = sum === 0 ? 'E' : (sum > 0 ? '+' + sum : '' + sum);
+    totCls = sum < 0 ? 'score-under' : sum > 0 ? 'score-over' : 'score-even';
+  }
+
+  const flagStyle = 'width:14px;height:10px;object-fit:cover;border-radius:1px;flex-shrink:0';
+  const flag = espn?.flagUrl && week
+    ? '<img src="' + espn.flagUrl + '" alt="" style="' + flagStyle + '" onerror="this.remove()">'
+    : '';
+  const teeTime = espn?.teeTime && week && (!thru || thru === '' || thru === '0')
+    ? '<div class="gc-tee-time">⏰ ' + espn.teeTime + '</div>'
+    : '';
+
+  const safeAlt = alt.replace(/'/g, "\\'");
+  return ('<div class="golfer-card gc-alt" onclick="openPlayerModal(\'' + safeAlt + '\')">')
+    + '<div class="gc-name-row"><div style="min-width:0;overflow:hidden">'
+    + '<div style="display:flex;align-items:center;gap:4px;flex-wrap:nowrap;min-width:0">'
+    + flag
+    + '<span class="gc-name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + alt + '</span>'
+    + '<span class="gc-tag gc-tag-alt">ALT</span>'
+    + '</div>' + teeTime + '</div></div>'
+    + '<div class="gc-scores">' + roundCells
+    + '<span class="gc-total ' + totCls + '" style="opacity:0.7">' + (totStr || '–') + '</span>'
+    + '</div></div>';
+}
+
 function renderMain(preserveScroll = false) {
   if (!state) return;
   if (activeView === 'history') { renderHistory(); return; }
@@ -2589,17 +2643,7 @@ function renderMain(preserveScroll = false) {
               </div>
             `;
           }).filter(Boolean).join('')}
-          ${alt ? `
-            <div class="golfer-card gc-alt" onclick="openPlayerModal('${alt.replace(/'/g, "\'")}')">
-              <div class="gc-name-row">
-                <span class="gc-name">${alt}</span>
-                <span class="gc-tag gc-tag-alt">ALT</span>
-              </div>
-              <div class="gc-scores">
-                <span class="gc-round gc-round-empty" style="grid-column:span 5">–</span>
-              </div>
-            </div>
-          ` : ''}
+          ${alt ? renderAltCard(alt) : ''}
         </div>
       </div>
     `;
