@@ -2447,9 +2447,7 @@ function renderAltCard(alt) {
   const teeTime = espn?.teeTime && week && (!thru || thru === '' || thru === '0')
     ? '<div class="gc-tee-time">⏰ ' + espn.teeTime + '</div>'
     : '';
-  const thruDisp = live && thru && thru !== '' && thru !== '0'
-    ? '<div class="gc-tee-time" style="color:var(--gold-light);opacity:0.8">' + (sd === 'F' || sd === 'F*' ? 'F' : 'Thru ' + thru) + '</div>'
-    : '';
+
 
   return '<div class="golfer-card gc-alt">'
     + '<div class="gc-name-row"><div style="min-width:0;overflow:hidden">'
@@ -2457,7 +2455,7 @@ function renderAltCard(alt) {
     + flag
     + '<span class="gc-name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + alt + '</span>'
     + '<span class="gc-tag gc-tag-alt">ALT</span>'
-    + '</div>' + teeTime + thruDisp + '</div></div>'
+    + '</div>' + teeTime + '</div></div>'
     + '<div class="gc-scores">' + roundCells
     + '<span class="gc-total ' + totCls + '" style="opacity:0.7">' + (totStr || '–') + '</span>'
     + '</div></div>';
