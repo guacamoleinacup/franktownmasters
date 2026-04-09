@@ -1820,6 +1820,25 @@
   }
 
 
+  /* ── ROUND CELL SUB-TEXT (hole indicator) ── */
+  .gc-round {
+    position: relative;
+  }
+  .gc-round-sub {
+    display: block;
+    font-size: 0.48rem;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.04em;
+    opacity: 0.7;
+    margin-top: 1px;
+    line-height: 1;
+    white-space: nowrap;
+  }
+  .gc-round-active {
+    outline: 1px solid rgba(201,168,76,0.4);
+  }
+
+
 </style>
 </head>
 <body>
@@ -2581,21 +2600,37 @@ function renderMain(preserveScroll = false) {
             else if (isWD) statusTag = '<span class="gc-tag gc-tag-wd">WD</span>';
             else if (isWinner) statusTag = '<span class="gc-tag gc-tag-win">🏆</span>';
 
+            const teeTimeStr = espnG?.teeTime || '';
+
+            // Which round is currently active for this player?
+            const activeRound = espnG?.raw?.linescores?.length
+              ? Math.min(espnG.raw.linescores.length - 1, 3)
+              : -1;
+            const sd = espnG?.raw?.status?.type?.shortDetail || '';
+            const thruRaw = espnG?.thru;
+            const isFinal = sd === 'F' || sd === 'F*';
+
             const roundCells = live ? [0,1,2,3].map(r => {
-              if (rounds[r] === undefined) return `<span class="gc-round gc-round-empty">–</span>`;
+              if (rounds[r] === undefined) {
+                // No score yet — show tee time for next round if available
+                const isNext = r === activeRound + 1;
+                const subText = isNext && teeTimeStr
+                  ? `<span class="gc-round-sub">⏰${teeTimeStr}</span>`
+                  : '';
+                return `<span class="gc-round gc-round-empty" style="position:relative">–${subText}</span>`;
+              }
               const cls = rounds[r] < 0 ? 'score-under' : rounds[r] > 0 ? 'score-over' : 'score-even';
-              return `<span class="gc-round ${cls}">${rounds[r] === 0 ? 'E' : (rounds[r] > 0 ? '+' : '') + rounds[r]}</span>`;
+              const isCurrent = r === activeRound && !isFinal;
+              // For active round: show thru below score
+              const subText = isCurrent && thruRaw && thruRaw !== '0'
+                ? `<span class="gc-round-sub">H${thruRaw}</span>`
+                : isFinal && r === activeRound
+                ? `<span class="gc-round-sub" style="opacity:0.5">F</span>`
+                : '';
+              return `<span class="gc-round ${cls}${isCurrent ? ' gc-round-active' : ''}" style="position:relative">${rounds[r] === 0 ? 'E' : (rounds[r] > 0 ? '+' : '') + rounds[r]}${subText}</span>`;
             }).join('') : '<span class="gc-round gc-round-empty" style="grid-column:span 4">–</span>';
 
-            const teeTimeStr = espnG?.teeTime || '';
-            const thruDisp = (() => {
-              if (!live || !espnG) return '';
-              const sd = espnG.raw?.status?.type?.shortDetail || '';
-              if (sd === 'F' || sd === 'F*') return 'F';
-              const t = espnG.thru;
-              if (!t || t === '' || t === '0') return '';
-              return 'Thru ' + t;
-            })();
+            const thruDisp = ''; // now shown inline under active round cell
             return `
               <div class="golfer-card${isCut ? ' gc-cut' : isWD ? ' gc-wd' : ''}">
                 <div class="gc-name-row">
@@ -2605,8 +2640,8 @@ function renderMain(preserveScroll = false) {
                       <span class="gc-name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${g}</span>
                       ${statusTag}
                     </div>
-                    ${teeTimeStr && isTournamentWeek(activeMajorId) && (!espnG?.thru || espnG.thru === '' || espnG.thru === '0') ? `<div class="gc-tee-time">⏰ ${teeTimeStr}</div>` : ''}
-                    ${thruDisp ? `<div class="gc-tee-time" style="color:var(--gold-light);opacity:0.8">${thruDisp}</div>` : ''}
+
+
                   </div>
                 </div>
                 <div class="gc-scores">
