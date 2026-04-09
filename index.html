@@ -3280,12 +3280,19 @@ function renderPlayerScorecard(competitor, golferName, athleteProfile = null) {
   const linescores = competitor.linescores || [];
   const roundLabels = ['Round 1', 'Round 2', 'Round 3', 'Round 4'];
 
-  // Build round rows
-  if (linescores.length === 0) {
-    html = '<div class="scorecard-no-data">No round data yet — check back once play begins</div>';
+  // ESPN linescores: one entry per round played
+  // Only show rounds that have actual strokes (value > 0)
+  const playedRounds = linescores.filter((ls, i) => i < 4 && (parseInt(ls.value) > 0 || String(ls.displayValue).trim() !== ''));
+
+  if (playedRounds.length === 0) {
+    html = '<div class="scorecard-no-data">No round data yet</div>';
     pmBody.innerHTML = html;
     return;
   }
+
+  const thru = parseInt(competitor.status?.thru) || 0;
+  const shortDetail = competitor.status?.type?.shortDetail || '';
+  const tourneyComplete = shortDetail === 'F' || shortDetail === 'F*';
 
   html += `
     <table class="scorecard-table" style="width:100%;margin-bottom:20px">
@@ -3301,27 +3308,31 @@ function renderPlayerScorecard(competitor, golferName, athleteProfile = null) {
   `;
 
   let totalStrokes = 0;
-  linescores.forEach((ls, i) => {
-    if (i >= 4) return;
+  playedRounds.forEach((ls, i) => {
     const disp = String(ls.displayValue ?? '').trim();
     const strokes = parseInt(ls.value) || 0;
-    const period = ls.period || (i + 1);
     const toPar = disp === 'E' ? 0 : (parseInt(disp) || 0);
     const toParStr = toPar === 0 ? 'E' : (toPar > 0 ? '+' + toPar : String(toPar));
     const cls = toPar < 0 ? 'score-under' : toPar > 0 ? 'score-over' : 'score-even';
     totalStrokes += strokes;
-
-    // Determine round status
-    const thru = competitor.status?.thru || 0;
-    const shortDetail = competitor.status?.type?.shortDetail || '';
-    const isCurrentRound = (i === linescores.length - 1);
-    let status = shortDetail === 'F' || shortDetail === 'F*' ? 'Final' : 
-                 isCurrentRound && thru > 0 ? `Thru ${thru}` : 
-                 isCurrentRound ? 'In Progress' : 'Final';
+    const isCurrentRound = (i === playedRounds.length - 1);
+    // Status: last round = current status, earlier rounds = Final
+    let status;
+    if (!isCurrentRound) {
+      status = 'Final';
+    } else if (tourneyComplete) {
+      status = 'Final';
+    } else if (thru === 18) {
+      status = 'Final';
+    } else if (thru > 0) {
+      status = `Thru ${thru}`;
+    } else {
+      status = 'In Progress';
+    }
 
     html += `
       <tr>
-        <td style="text-align:left;padding-left:12px;font-family:'Libre Baskerville',serif">${roundLabels[i] || 'Round ' + period}</td>
+        <td style="text-align:left;padding-left:12px;font-family:'Libre Baskerville',serif">${roundLabels[i] || 'Round ' + (i+1)}</td>
         <td class="num"><span class="score-val ${cls}">${toParStr}</span></td>
         <td class="num" style="font-family:'DM Mono',monospace;font-size:0.8rem;color:rgba(200,200,200,0.6)">${strokes}</td>
         <td class="num" style="font-family:'DM Mono',monospace;font-size:0.7rem;color:rgba(200,200,200,0.4)">${status}</td>
@@ -3331,9 +3342,10 @@ function renderPlayerScorecard(competitor, golferName, athleteProfile = null) {
 
   html += `</tbody></table>`;
 
-  // Overall summary
+  // Overall summary — use ESPN's overall score directly
   const overallScore = competitor.score?.displayValue || 'E';
   const overallCls = overallScore.startsWith('-') ? 'score-under' : overallScore.startsWith('+') ? 'score-over' : 'score-even';
+  const pos = competitor.status?.position?.displayName || '';
   html += `
     <div style="border-top:1px solid var(--border);padding-top:16px;display:flex;gap:24px;flex-wrap:wrap">
       <div style="text-align:center;min-width:60px">
@@ -3341,10 +3353,9 @@ function renderPlayerScorecard(competitor, golferName, athleteProfile = null) {
         <div class="score-val ${overallCls}" style="font-size:1.4rem;font-weight:700">${overallScore === '0' ? 'E' : overallScore}</div>
         <div style="font-family:'DM Mono',monospace;font-size:0.6rem;color:rgba(200,200,200,0.4);margin-top:2px">${totalStrokes} strokes</div>
       </div>
-      ${competitor.status?.position?.displayName ? `
-      <div style="text-align:center;min-width:60px">
+      ${pos ? `<div style="text-align:center;min-width:60px">
         <div style="font-family:'DM Mono',monospace;font-size:0.6rem;color:var(--gold-light);opacity:0.6;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px">Position</div>
-        <div style="font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:700;color:var(--cream)">${competitor.status.position.displayName}</div>
+        <div style="font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:700;color:var(--cream)">${pos}</div>
       </div>` : ''}
     </div>
   `;
