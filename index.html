@@ -2540,7 +2540,7 @@ function renderMain(preserveScroll = false) {
     const potAdd = (mData.potExtra[ts.player] || 0) * 5;
 
     const scoreDisp = live && ts.score !== null
-      ? `<span class="tc-score ${ts.score < 0 ? 'score-under' : ts.score > 0 ? 'score-over' : 'score-even'}">${ts.score > 0 ? '+' : ''}${ts.score}</span>`
+      ? `<span class="tc-score ${ts.score < 0 ? 'score-under' : ts.score > 0 ? 'score-over' : 'score-even'}">${ts.score === 0 ? 'E' : (ts.score > 0 ? '+' : '') + ts.score}</span>`
       : `<span class="tc-score-dash">–</span>`;
 
     html += `
