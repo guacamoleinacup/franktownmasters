@@ -2404,6 +2404,10 @@ function renderAltCard(alt) {
   const thru = espn?.thru || '';
   const sd = espn?.raw?.status?.type?.shortDetail || '';
 
+  const altThru = thru && thru !== '0' && thru !== 'F' ? thru : '';
+  const altFinal = sd === 'F' || sd === 'F*' || thru === 'F';
+  const altLastPlayed = ls.length - 1;
+
   let roundCells = '';
   if (live && ls.length > 0) {
     roundCells = [0,1,2,3].map(r => {
@@ -2413,7 +2417,14 @@ function renderAltCard(alt) {
       const tp = isNaN(n) ? null : (Math.abs(n) > 20 ? n - 72 : n);
       if (tp === null) return '<span class="gc-round gc-round-empty">–</span>';
       const cls = tp < 0 ? 'score-under' : tp > 0 ? 'score-over' : 'score-even';
-      return '<span class="gc-round ' + cls + '">' + (tp === 0 ? 'E' : (tp > 0 ? '+' : '') + tp) + '</span>';
+      const isLast = r === altLastPlayed;
+      const sub = isLast && altFinal
+        ? '<span class="gc-round-sub" style="opacity:0.5">F</span>'
+        : isLast && altThru
+        ? '<span class="gc-round-sub">H' + altThru + '</span>'
+        : '';
+      const active = isLast && !altFinal ? ' gc-round-active' : '';
+      return '<span class="gc-round ' + cls + active + '">' + (tp === 0 ? 'E' : (tp > 0 ? '+' : '') + tp) + sub + '</span>';
     }).join('');
   } else {
     roundCells = '<span class="gc-round gc-round-empty" style="grid-column:span 4">–</span>';
