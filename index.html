@@ -2611,26 +2611,18 @@ function renderMain(preserveScroll = false) {
             const isFinal = sd === 'F' || sd === 'F*';
 
             const roundCells = live ? [0,1,2,3].map(r => {
-              if (rounds[r] === undefined) {
-                // No score yet — show tee time for next round if available
-                const isNext = r === activeRound + 1;
-                const subText = isNext && teeTimeStr
-                  ? `<span class="gc-round-sub">⏰${teeTimeStr}</span>`
-                  : '';
-                return `<span class="gc-round gc-round-empty" style="position:relative">–${subText}</span>`;
-              }
+              if (rounds[r] === undefined) return `<span class="gc-round gc-round-empty">–</span>`;
               const cls = rounds[r] < 0 ? 'score-under' : rounds[r] > 0 ? 'score-over' : 'score-even';
               const isCurrent = r === activeRound && !isFinal;
-              // For active round: show thru below score
               const subText = isCurrent && thruRaw && thruRaw !== '0'
                 ? `<span class="gc-round-sub">H${thruRaw}</span>`
                 : isFinal && r === activeRound
                 ? `<span class="gc-round-sub" style="opacity:0.5">F</span>`
                 : '';
-              return `<span class="gc-round ${cls}${isCurrent ? ' gc-round-active' : ''}" style="position:relative">${rounds[r] === 0 ? 'E' : (rounds[r] > 0 ? '+' : '') + rounds[r]}${subText}</span>`;
+              return `<span class="gc-round ${cls}${isCurrent ? ' gc-round-active' : ''}">${rounds[r] === 0 ? 'E' : (rounds[r] > 0 ? '+' : '') + rounds[r]}${subText}</span>`;
             }).join('') : '<span class="gc-round gc-round-empty" style="grid-column:span 4">–</span>';
 
-            const thruDisp = ''; // now shown inline under active round cell
+            const thruDisp = '';
             return `
               <div class="golfer-card${isCut ? ' gc-cut' : isWD ? ' gc-wd' : ''}">
                 <div class="gc-name-row">
