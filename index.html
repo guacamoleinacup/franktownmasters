@@ -3204,8 +3204,16 @@ function renderPlayerScorecard(competitor, golferName, athleteProfile = null) {
               <tr>
                 <td>${golferName.split(' ').pop()}</td>
                 ${front.map((h, hi) => {
-                  const strokes = parseInt(h.value) || 0;
+                  // Use displayValue (hole to-par) to derive actual strokes
+                  // ESPN displayValue: "-1" birdie, "0" par, "+1" bogey, etc.
                   const par = pars[hi];
+                  const disp = String(h.displayValue ?? '').trim();
+                  let strokes = parseInt(h.value) || 0;
+                  // If value looks wrong (cumulative), derive from displayValue + par
+                  if (disp !== '' && disp !== '-') {
+                    const holeToPar = disp === 'E' ? 0 : parseInt(disp);
+                    if (!isNaN(holeToPar)) strokes = par + holeToPar;
+                  }
                   const diff = strokes - par;
                   let cls = '';
                   if (diff <= -2) cls = 'score-eagle';
@@ -3218,8 +3226,13 @@ function renderPlayerScorecard(competitor, golferName, athleteProfile = null) {
                 ${front.length < 9 ? Array(9-front.length).fill('<td>–</td>').join('') : ''}
                 <td style="border-left:2px solid var(--border);font-weight:700">${frontTotal || '–'}</td>
                 ${back.map((h, hi) => {
-                  const strokes = parseInt(h.value) || 0;
                   const par = pars[9+hi];
+                  const disp = String(h.displayValue ?? '').trim();
+                  let strokes = parseInt(h.value) || 0;
+                  if (disp !== '' && disp !== '-') {
+                    const holeToPar = disp === 'E' ? 0 : parseInt(disp);
+                    if (!isNaN(holeToPar)) strokes = par + holeToPar;
+                  }
                   const diff = strokes - par;
                   let cls = '';
                   if (diff <= -2) cls = 'score-eagle';
