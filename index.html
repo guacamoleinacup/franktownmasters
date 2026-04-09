@@ -2505,48 +2505,26 @@ function renderMain(preserveScroll = false) {
             const isWinner = mData.majorWinner === g;
             const espnG = getGolferScore(activeMajorId, g);
 
-            // Per-round scores — read directly from ESPN's linescores array
-            // Each linescore entry is one ROUND (not one hole) for the leaderboard API
+            // Per-round scores: ESPN leaderboard API returns one linescore per ROUND
+            // ls.displayValue = to-par string ("-5","E","+2")
+            // ls.value = stroke total for the round (67, 72, etc.)
             const linescores = espnG?.raw?.linescores || [];
             const rounds = [];
-            linescores.forEach((ls, r) => {
-              if (r >= 4) return;
-              // displayValue is the round score e.g. "-5", "+2", "E", "67", "72"
-              const disp = ls.displayValue || ls.value;
-              if (disp === undefined || disp === null || disp === '') return;
-              // ESPN sometimes gives stroke total (e.g. 67), sometimes gives to-par (e.g. -5)
-              // The value field is strokes, displayValue is to-par relative to round par
-              const dispStr = String(disp);
+            linescores.slice(0, 4).forEach(ls => {
+              const disp = String(ls.displayValue ?? '').trim();
+              const val = parseInt(ls.value);
               let toPar;
-              if (dispStr === 'E') toPar = 0;
-              else {
-                const n = parseInt(dispStr);
-                if (!isNaN(n)) {
-                  // If it looks like a full round score (65-80 range), convert to to-par
-                  if (Math.abs(n) > 20) {
-                    const roundPar = 72; // Augusta is par 72
-                    toPar = n - roundPar;
-                  } else {
-                    toPar = n;
-                  }
-                }
+              if (disp === 'E') {
+                toPar = 0;
+              } else if (disp !== '' && !isNaN(parseInt(disp))) {
+                const n = parseInt(disp);
+                // if absolute value > 20 it's a stroke total, convert via par 72
+                toPar = Math.abs(n) > 20 ? n - 72 : n;
+              } else if (!isNaN(val)) {
+                toPar = Math.abs(val) > 20 ? val - 72 : val;
               }
               if (toPar !== undefined) rounds.push(toPar);
             });
-
-            const overallScore = live && espnG ? espnG.score : null;
-            const overallCls = overallScore ? (overallScore.startsWith('-') ? 'score-under' : overallScore.startsWith('+') ? 'score-over' : 'score-even') : '';
-
-            let statusTag = '';
-            if (isCut) statusTag = '<span class="gc-tag gc-tag-cut">MC</span>';
-            else if (isWD) statusTag = '<span class="gc-tag gc-tag-wd">WD</span>';
-            else if (isWinner) statusTag = '<span class="gc-tag gc-tag-win">🏆</span>';
-
-            const roundCells = live ? [0,1,2,3].map(r => {
-              if (rounds[r] === undefined) return `<span class="gc-round gc-round-empty">–</span>`;
-              const cls = rounds[r] < 0 ? 'score-under' : rounds[r] > 0 ? 'score-over' : 'score-even';
-              return `<span class="gc-round ${cls}">${rounds[r] > 0 ? '+' : ''}${rounds[r]}</span>`;
-            }).join('') : '<span class="gc-round gc-round-empty" style="grid-column:span 4">–</span>';
 
             const teeTimeStr = espnG?.teeTime || '';
             return `
@@ -2558,12 +2536,12 @@ function renderMain(preserveScroll = false) {
                       <span class="gc-name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${g}</span>
                       ${statusTag}
                     </div>
-                    ${teeTimeStr && !live && isTournamentWeek(activeMajorId) ? `<div class="gc-tee-time">⏰ ${teeTimeStr}</div>` : ''}
+                    ${teeTimeStr && isTournamentWeek(activeMajorId) && (!espnG?.thru || espnG.thru === '' || espnG.thru === '0') ? `<div class="gc-tee-time">⏰ ${teeTimeStr}</div>` : ''}
                   </div>
                 </div>
                 <div class="gc-scores">
                   ${roundCells}
-                  <span class="gc-total ${overallCls}">${live && overallScore ? overallScore : '–'}</span>
+                  <span class="gc-total ${overallCls}">${live && overallScore ? (overallScore === '0' || overallScore === 'E' ? 'E' : overallScore) : '–'}</span>
                 </div>
               </div>
             `;
@@ -3160,9 +3138,10 @@ function renderPlayerScorecard(competitor, golferName, athleteProfile = null) {
   } else {
     rounds.forEach((holes, ri) => {
       const roundLabel = ['Round 1', 'Round 2', 'Round 3', 'Round 4'][ri];
-      const roundTotal = holes.reduce((sum, h) => sum + (parseInt(h.value) || 0), 0);
-      const roundPar = pars.slice(0, holes.length).reduce((a,b) => a+b, 0);
-      const roundToPar = roundTotal - roundPar;
+      const completedHoles = holes.filter(h => h.value !== undefined && h.value !== null && String(h.value).trim() !== '');
+      const roundTotal = completedHoles.reduce((sum, h) => sum + (parseInt(h.value) || 0), 0);
+      const roundPar = pars.slice(0, completedHoles.length).reduce((a,b) => a+b, 0);
+      const roundToPar = completedHoles.length > 0 ? roundTotal - roundPar : 0;
       const roundToParStr = roundToPar === 0 ? 'E' : (roundToPar > 0 ? `+${roundToPar}` : `${roundToPar}`);
       const roundToParCls = roundToPar < 0 ? 'score-under' : roundToPar > 0 ? 'score-over' : 'score-even';
 
@@ -3254,7 +3233,7 @@ function renderPlayerScorecard(competitor, golferName, athleteProfile = null) {
               <div style="text-align:center;min-width:52px">
                 <div style="font-family:'DM Mono',monospace;font-size:0.58rem;color:var(--gold-light);opacity:0.6;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px">R${ri+1}</div>
                 <div class="score-val ${cls}" style="font-size:1.1rem;font-weight:700">${toParStr}</div>
-                <div style="font-family:'DM Mono',monospace;font-size:0.6rem;color:rgba(200,200,200,0.4);margin-top:2px">${roundTotal} strokes</div>
+                ${roundTotal > 0 ? `<div style="font-family:'DM Mono',monospace;font-size:0.6rem;color:rgba(200,200,200,0.4);margin-top:2px">${roundTotal} strokes</div>` : ''}
               </div>
             `;
           }).join('')}
