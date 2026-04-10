@@ -1534,7 +1534,6 @@
     border-radius: 5px;
     background: rgba(255,255,255,0.03);
     border: 1px solid transparent;
-    cursor: pointer;
     transition: background 0.15s, border-color 0.15s;
     gap: 8px;
   }
@@ -1580,7 +1579,7 @@
 
   .gc-scores {
     display: grid;
-    grid-template-columns: repeat(4, 32px) 36px;
+    grid-template-columns: repeat(4, 30px) 34px;
     gap: 2px;
     flex-shrink: 0;
     align-items: center;
@@ -1592,6 +1591,8 @@
     text-align: center;
     padding: 3px 2px;
     border-radius: 3px;
+    min-width: 0;
+    width: 100%;
     background: rgba(0,0,0,0.15);
   }
 
@@ -1629,7 +1630,7 @@
 
   .tc-col-rounds {
     display: grid;
-    grid-template-columns: repeat(4, 32px) 36px;
+    grid-template-columns: repeat(4, 30px) 34px;
     gap: 2px;
     flex-shrink: 0;
   }
