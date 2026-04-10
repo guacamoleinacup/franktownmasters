@@ -2644,6 +2644,7 @@ function renderMain(preserveScroll = false) {
                       <span class="gc-name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${g}</span>
                       ${statusTag}
                     </div>
+                    ${teeTimeStr && isTournamentWeek(activeMajorId) && (!espnG?.thru || espnG.thru === '' || espnG.thru === '0') ? `<div class="gc-tee-time">⏰ ${teeTimeStr}</div>` : ''}
 
 
                   </div>
