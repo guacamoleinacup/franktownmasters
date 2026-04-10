@@ -2529,6 +2529,27 @@ function renderMain(preserveScroll = false) {
   // ── TEAM CARDS GRID ──
   html += `<div class="team-cards-grid">`;
 
+  // Find the lowest individual golfer score across all teams (tournament leader)
+  let minGolferScore = null;
+  if (live) {
+    teamScores.forEach(ts => {
+      const picks = mData.rosters[ts.player]?.picks || [];
+      picks.forEach(g => {
+        if (!g) return;
+        const espn = getGolferScore(activeMajorId, g);
+        if (!espn) return;
+        const ls = espn.raw?.linescores?.slice(0,4) || [];
+        if (ls.length === 0) return;
+        const score = ls.reduce((s, r) => {
+          const d = String(r.displayValue ?? '').trim();
+          const n = d === 'E' ? 0 : parseInt(d);
+          return s + (isNaN(n) ? 0 : (Math.abs(n) > 20 ? n - 72 : n));
+        }, 0);
+        if (minGolferScore === null || score < minGolferScore) minGolferScore = score;
+      });
+    });
+  }
+
   teamScores.forEach((ts, rank) => {
     const roster = mData.rosters[ts.player];
     const picks = roster?.picks || [];
@@ -2566,6 +2587,11 @@ function renderMain(preserveScroll = false) {
             const isWD = status === 'withdrawn';
             const isWinner = mData.majorWinner === g;
             const espnG = getGolferScore(activeMajorId, g);
+            const golferLS = espnG?.raw?.linescores?.slice(0,4) || [];
+            const golferScore = live && golferLS.length > 0
+              ? golferLS.reduce((s, r) => { const d = String(r.displayValue??'').trim(); const n=d==='E'?0:parseInt(d); return s+(isNaN(n)?0:(Math.abs(n)>20?n-72:n)); }, 0)
+              : null;
+            const isGolferLeader = live && minGolferScore !== null && golferScore === minGolferScore;
 
             // Per-round scores — read directly from ESPN's linescores array
             // Each linescore entry is one ROUND (not one hole) for the leaderboard API
@@ -2642,7 +2668,7 @@ function renderMain(preserveScroll = false) {
                   <div style="min-width:0;overflow:hidden">
                     <div style="display:flex;align-items:center;gap:4px;flex-wrap:nowrap;min-width:0">
                       ${espnG?.flagUrl && isTournamentWeek(activeMajorId) ? `<img src="${espnG.flagUrl}" alt="" style="width:14px;height:10px;object-fit:cover;border-radius:1px;flex-shrink:0" onerror="this.style.display='none'">` : ''}
-                      <span class="gc-name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${g}</span>
+                      <span class="gc-name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis${isGolferLeader ? ';color:var(--gold);font-weight:700' : ''}">${g}${isGolferLeader ? ' 🏆' : ''}</span>
                       ${statusTag}
                     </div>
                     ${teeTimeStr && isTournamentWeek(activeMajorId) && (!espnG?.thru || espnG.thru === '' || espnG.thru === '0') ? `<div class="gc-tee-time">⏰ ${teeTimeStr}</div>` : ''}
