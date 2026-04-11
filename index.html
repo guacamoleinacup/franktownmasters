@@ -1875,8 +1875,23 @@
 <div class="toast" id="toast"></div>
 
 
-<!-- PLAYER CARD MODAL -->
-
+<!-- ADMIN MODAL -->
+<div class="modal-overlay" id="adminModal" style="display:none" onclick="if(event.target===this&&adminUnlocked)closeAdmin()">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Admin Panel</span>
+      <button class="modal-close" onclick="closeAdmin()">×</button>
+    </div>
+    <div class="modal-body" id="adminBody">
+      <div class="pw-gate" id="pwGate">
+        <p>Enter admin password</p>
+        <input type="password" id="pwInput" placeholder="••••••••" onkeydown="if(event.key==='Enter')checkPw()">
+        <button class="btn btn-gold" onclick="checkPw()">Unlock</button>
+        <span class="pw-error" id="pwError"></span>
+      </div>
+    </div>
+  </div>
+</div>
 
 <script>
 // ══════════════════════════════════════════
