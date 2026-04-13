@@ -2951,9 +2951,14 @@ function renderAdmin() {
     <div class="admin-section">
       <h3>Declare Winners</h3>
       <div class="form-group" style="margin-bottom:14px">
-        <label>Major Champion (golfer name)</label>
-        <input type="text" value="${mData.majorWinner||''}" oninput="state.majors[activeMajorId].majorWinner=this.value" placeholder="e.g. Rory McIlroy">
-        <div style="font-family:'DM Mono',monospace;font-size:0.6rem;color:var(--gold-light);opacity:0.6;margin-top:4px">The golfer who won the tournament — owner of this golfer wins half the pot</div>
+        <label>Major Champion</label>
+        <select onchange="state.majors[activeMajorId].majorWinner=this.value">
+          <option value="">– Not set –</option>
+          ${PLAYERS.flatMap(p => (mData.rosters[p]?.picks||[]).filter(Boolean).map(g => ({g, p}))).map(({g, p}) =>
+            `<option value="${g}" ${mData.majorWinner===g?'selected':''}>${g} (${p})</option>`
+          ).join('')}
+        </select>
+        <div style="font-family:'DM Mono',monospace;font-size:0.6rem;color:var(--gold-light);opacity:0.6;margin-top:4px">Owner of this golfer wins half the pot</div>
       </div>
       <div class="form-group" style="margin-bottom:14px">
         <label>Low Team Winner(s) — check all that tied</label>
