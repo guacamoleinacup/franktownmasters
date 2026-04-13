@@ -2363,12 +2363,14 @@ function renderPayoutSummary(majorId) {
   }).join('');
 
   // Winners
-  const teamWinnerRow = mData.teamWinner ? `
+  const twNames = mData.teamWinner ? mData.teamWinner.split(',').map(s=>s.trim()).filter(Boolean) : [];
+  const twShare = twNames.length > 0 ? Math.floor(pot.half / twNames.length) : pot.half;
+  teamWinnerRow = twNames.length ? twNames.map(w => `
     <div class="payout-row payout-winner">
-      <span class="payout-label">🥇 ${mData.teamWinner}</span>
-      <span class="payout-detail">Low Team</span>
-      <span class="payout-amount payout-pos">+$${pot.half}</span>
-    </div>` : '';
+      <span class="payout-label">🥇 ${w}</span>
+      <span class="payout-detail">Low Team${twNames.length > 1 ? ' (Split)' : ''}</span>
+      <span class="payout-amount payout-pos">+$${twShare}</span>
+    </div>`).join('') : '';
 
   const majorWinnerOwner = PLAYERS.find(p => mData.rosters[p]?.picks?.includes(mData.majorWinner));
   const majorWinnerRow = mData.majorWinner ? `
@@ -2520,7 +2522,10 @@ function renderMain(preserveScroll = false) {
     html += `<div class="winner-banner"><div class="winner-trophy">🏆</div><div class="winner-text"><h3>Major Champion: ${mData.majorWinner}</h3><p>Drafted by ${PLAYERS.find(p => mData.rosters[p]?.picks?.includes(mData.majorWinner)) || 'unknown'} · $${pot.half} prize</p></div></div>`;
   }
   if (mData.teamWinner) {
-    html += `<div class="winner-banner"><div class="winner-trophy">🥇</div><div class="winner-text"><h3>Low Team: ${mData.teamWinner}</h3><p>Best combined score · $${pot.half} prize</p></div></div>`;
+    const twList = mData.teamWinner.split(',').map(s=>s.trim()).filter(Boolean);
+    const twLabel = twList.join(' & ');
+    const twPrize = Math.floor(pot.half / twList.length);
+    html += `<div class="winner-banner"><div class="winner-trophy">🥇</div><div class="winner-text"><h3>Low Team: ${twLabel}</h3><p>Best combined score · $${twPrize} prize${twList.length > 1 ? " each" : ""}</p></div></div>`;
   }
 
   if (!hasRosters) {
@@ -2724,7 +2729,8 @@ function renderOverallStandings() {
     PLAYERS.forEach(p => {
       const paid = 20 + (mData.potExtra[p] || 0) * 5;
       let won = 0;
-      if (mData.teamWinner === p) won += pot.half;
+      const twSplit = mData.teamWinner ? mData.teamWinner.split(',').map(s=>s.trim()) : [];
+      if (twSplit.includes(p)) won += Math.floor(pot.half / twSplit.length);
       const roster = mData.rosters[p];
       if (mData.majorWinner && roster?.picks?.includes(mData.majorWinner)) won += pot.half;
       totals[p].net += (won - paid);
@@ -2951,10 +2957,16 @@ function renderAdmin() {
         </div>
         <div class="form-group">
           <label>Low Team Winner (player)</label>
-          <select onchange="state.majors[activeMajorId].teamWinner=this.value">
-            <option value="">– Not set –</option>
-            ${PLAYERS.map(p => `<option value="${p}" ${mData.teamWinner===p?'selected':''}>${p}</option>`).join('')}
-          </select>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">
+            ${PLAYERS.map(p => {
+              const winners = mData.teamWinner ? mData.teamWinner.split(',').map(s=>s.trim()) : [];
+              const checked = winners.includes(p);
+              return `<label style="display:flex;align-items:center;gap:4px;font-family:'DM Mono',monospace;font-size:0.7rem;color:var(--cream);cursor:pointer">
+                <input type="checkbox" value="${p}" ${checked?'checked':''} onchange="toggleTeamWinner('${p}',this.checked)" style="accent-color:var(--gold)">
+                ${p}
+              </label>`;
+            }).join('')}
+          </div>
         </div>
       </div>
       <div style="margin-top:10px">
@@ -2973,6 +2985,14 @@ function updatePick(player, slot, val) {
 function updateAlt(player, val) {
   state.majors[activeMajorId].rosters[player].alternate = val.trim();
 }
+function toggleTeamWinner(player, checked) {
+  const mData = state.majors[activeMajorId];
+  const winners = mData.teamWinner ? mData.teamWinner.split(',').map(s=>s.trim()).filter(Boolean) : [];
+  if (checked && !winners.includes(player)) winners.push(player);
+  if (!checked) winners.splice(winners.indexOf(player), 1);
+  mData.teamWinner = winners.join(',');
+}
+
 function saveRosters() { syncPush(); }
 
 function updateStatus(golfer, owner, status) {
@@ -3078,7 +3098,8 @@ function renderHistory() {
     const playerResults = PLAYERS.map(p => {
       const paid = 20 + (mData.potExtra[p] || 0) * 5;
       let won = 0;
-      if (mData.teamWinner === p) won += pot.half;
+      const twSplit = mData.teamWinner ? mData.teamWinner.split(',').map(s=>s.trim()) : [];
+      if (twSplit.includes(p)) won += Math.floor(pot.half / twSplit.length);
       const roster = mData.rosters[p];
       if (mData.majorWinner && roster?.picks?.includes(mData.majorWinner)) won += pot.half;
       const net = won - paid;
@@ -3111,7 +3132,7 @@ function renderHistory() {
           ${mData.teamWinner ? `
             <div class="history-winner-item">
               <div class="history-winner-label">🥇 Low Team</div>
-              <div class="history-winner-value">${mData.teamWinner}</div>
+              <div class="history-winner-value">${mData.teamWinner?.split(",").map(s=>s.trim()).join(" & ") || ""}</div>
             </div>
           ` : ''}
           <div class="history-winner-item">
@@ -3430,7 +3451,8 @@ function renderStandings() {
     PLAYERS.forEach(p => {
       const paid = 20 + (mData.potExtra[p] || 0) * 5;
       let won = 0;
-      if (mData.teamWinner === p) won += pot.half;
+      const twSplit = mData.teamWinner ? mData.teamWinner.split(',').map(s=>s.trim()) : [];
+      if (twSplit.includes(p)) won += Math.floor(pot.half / twSplit.length);
       const roster = mData.rosters[p];
       if (mData.majorWinner && roster?.picks?.includes(mData.majorWinner)) won += pot.half;
       const net = won - paid;
