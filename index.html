@@ -2907,7 +2907,7 @@ function renderAdmin() {
                     <option value="active" ${status==='active'?'selected':''}>Active</option>
                     <option value="missed_cut" ${status==='missed_cut'?'selected':''}>Missed Cut</option>
                     <option value="withdrawn" ${status==='withdrawn'?'selected':''}>Withdrawn</option>
-                    <option value="winner" ${status==='winner'?'selected':''}>Winner 🏆</option>
+                    
                   </select>
                 </td>
               </tr>
@@ -2950,24 +2950,24 @@ function renderAdmin() {
     <!-- Winner Declaration -->
     <div class="admin-section">
       <h3>Declare Winners</h3>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Major Champion (golfer name)</label>
-          <input type="text" value="${mData.majorWinner||''}" oninput="state.majors[activeMajorId].majorWinner=this.value" placeholder="e.g. Scottie Scheffler">
+      <div class="form-group" style="margin-bottom:14px">
+        <label>Major Champion (golfer name)</label>
+        <input type="text" value="${mData.majorWinner||''}" oninput="state.majors[activeMajorId].majorWinner=this.value" placeholder="e.g. Rory McIlroy">
+        <div style="font-family:'DM Mono',monospace;font-size:0.6rem;color:var(--gold-light);opacity:0.6;margin-top:4px">The golfer who won the tournament — owner of this golfer wins half the pot</div>
+      </div>
+      <div class="form-group" style="margin-bottom:14px">
+        <label>Low Team Winner(s) — check all that tied</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
+          ${PLAYERS.map(p => {
+            const winners = mData.teamWinner ? mData.teamWinner.split(',').map(s=>s.trim()) : [];
+            const checked = winners.includes(p);
+            return `<label style="display:flex;align-items:center;gap:6px;font-family:'DM Mono',monospace;font-size:0.75rem;color:var(--cream);cursor:pointer;padding:6px 8px;border:1px solid ${checked?'var(--gold)':'var(--border)'};border-radius:4px;background:${checked?'rgba(201,168,76,0.1)':'transparent'}">
+              <input type="checkbox" value="${p}" ${checked?'checked':''} onchange="toggleTeamWinner('${p}',this.checked);renderAdmin()" style="accent-color:var(--gold);width:14px;height:14px">
+              ${p}
+            </label>`;
+          }).join('')}
         </div>
-        <div class="form-group">
-          <label>Low Team Winner (player)</label>
-          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">
-            ${PLAYERS.map(p => {
-              const winners = mData.teamWinner ? mData.teamWinner.split(',').map(s=>s.trim()) : [];
-              const checked = winners.includes(p);
-              return `<label style="display:flex;align-items:center;gap:4px;font-family:'DM Mono',monospace;font-size:0.7rem;color:var(--cream);cursor:pointer">
-                <input type="checkbox" value="${p}" ${checked?'checked':''} onchange="toggleTeamWinner('${p}',this.checked)" style="accent-color:var(--gold)">
-                ${p}
-              </label>`;
-            }).join('')}
-          </div>
-        </div>
+        <div style="font-family:'DM Mono',monospace;font-size:0.6rem;color:var(--gold-light);opacity:0.6;margin-top:6px">Half pot split equally among checked players</div>
       </div>
       <div style="margin-top:10px">
         <button class="btn btn-gold" onclick="saveWinners()">Save Winners</button>
